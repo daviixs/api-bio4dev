@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+//
+// ---------------- USERS ----------------
+//
+model users {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  senha       String
+  nome        String
+  criado_em   DateTime  @default(now())
+  atualizado_em DateTime @updatedAt
+
+  // Relacionamento 1:1 → Profile
+  profile     profiles?
+}
+
+//
+// ---------------- PROFILES ----------------
+//
+model profiles {
+  id          Int       @id @default(autoincrement())
+  user_id     Int       @unique
+  username    String    @unique
+  bio         String?
+  avatar_url  String?
+  theme_id    Int?
+  publicado   Boolean   @default(false)
+  criado_em   DateTime  @default(now())
+
+  // 1:1 User
+  user        users     @relation(fields: [user_id], references: [id])
+
+  // 1:N Pages
+  pages       pages[]
+
+  // 1:N Social accounts
+  social_accounts social_accounts[]
+}
+
+//
+// ---------------- PAGES ----------------
+//
+model pages {
+  id          Int       @id @default(autoincrement())
+  profile_id  Int
+  titulo      String
+  slug        String    @unique
+  ordem       Int?
+  criado_em   DateTime  @default(now())
+
+  // Many pages → 1 profile
+  profile     profiles  @relation(fields: [profile_id], references: [id])
+
+  // 1:N blocks customizados
+  custom      custom[]
+}
+
+//
+// ---------------- CUSTOM BLOCKS ----------------
+//
+model custom {
+  id        Int       @id @default(autoincrement())
+  page_id   Int
+  tipo      TipoBloco
+  ordem     Int
+  titulo    String?
+  conteudo  Json
+  ativo     Boolean   @default(true)
+  criado_em DateTime  @default(now())
+
+  // Many custom blocks → 1 page
+  page      pages     @relation(fields: [page_id], references: [id])
+}
+
+enum TipoBloco {
+  link
+  texto
+  imagem
+  botao
+  lista
+  spotify
+  youtube
+  tiktok
+}
+
+//
+// ---------------- SOCIAL ACCOUNTS ----------------
+//
+model social_accounts {
+  id          Int       @id @default(autoincrement())
+  profile_id  Int
+  plataforma  Plataforma
+  url         String
+  ordem       Int
+
+  // Many social accounts → 1 profile
+  profile     profiles @relation(fields: [profile_id], references: [id])
+}
+
+enum Plataforma {
+  instagram
+  tiktok
+  youtube
+  github
+}

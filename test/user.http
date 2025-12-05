@@ -1,0 +1,47 @@
+### Criar novo usuário
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "email": "usuario@exemplo.com",
+  "senha": "senha123",
+  "nome": "João Silva"
+}
+
+###
+
+### Criar usuário 2
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "email": "maria@exemplo.com",
+  "senha": "senha456",
+  "nome": "Maria Santos"
+}
+
+###
+
+### Buscar todos os usuários
+GET http://localhost:3000/users
+
+###
+
+### Buscar usuário por ID
+GET http://localhost:3000/users/1
+
+###
+
+### Atualizar usuário
+PUT http://localhost:3000/users/1
+Content-Type: application/json
+
+{
+  "nome": "João Silva Atualizado",
+  "email": "joao.atualizado@exemplo.com"
+}
+
+###
+
+### Deletar usuário
+DELETE http://localhost:3000/users/1
