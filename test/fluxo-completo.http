@@ -1,0 +1,225 @@
+### ========================================
+### FLUXO COMPLETO DE CRIAÇÃO DE PÁGINA
+### ========================================
+### ⚠️ IMPORTANTE: Copie os UUIDs retornados em cada resposta
+### para usar nas próximas requisições!
+### ========================================
+
+### 1️⃣ PASSO 1: Usuário cria conta
+### 📋 COPIE o "user.id" da resposta para usar no próximo passo
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "email": "teste@bio4dev.com",
+  "senha": "senha123",
+  "nome": "João Silva"
+}
+
+###
+
+### 2️⃣ PASSO 2: Criar Profile (precisa adicionar informações da tabela PROFILE)
+### ⚠️ SUBSTITUA o "userId" abaixo pelo UUID retornado no passo 1
+### 📋 COPIE o "profile.id" da resposta para usar nos próximos passos
+POST http://localhost:3000/profile
+Content-Type: application/json
+
+{
+  "userId": "COLE_AQUI_O_UUID_DO_USER",
+  "username": "joaosilva",
+  "bio": "Desenvolvedor Full Stack",
+  "avatarUrl": "https://example.com/avatar.jpg",
+  "themeId": 1,
+  "templateType": "template_01",
+  "published": false
+}
+
+###
+
+### 3️⃣ PASSO 3: Criar Page (definir url e título/nome)
+### ⚠️ SUBSTITUA o "profileId" abaixo pelo UUID do profile (passo 2)
+POST http://localhost:3000/pages
+Content-Type: application/json
+
+{
+  "profileId": "COLE_AQUI_O_UUID_DO_PROFILE",
+  "titulo": "Minha Página Principal",
+  "slug": "joaosilva-v2",
+  "ordem": 1
+}
+
+###
+
+### 4️⃣ PASSO 4: Criar Legenda (escolher informações da tabela legenda)
+### ⚠️ SUBSTITUA o "profileId" abaixo pelo UUID do profile (passo 2)
+POST http://localhost:3000/legenda
+Content-Type: application/json
+
+{
+  "profileId": "COLE_AQUI_O_UUID_DO_PROFILE",
+  "legendaFoto": "https://example.com/foto.jpg",
+  "nome": "João Silva",
+  "titulo": "Desenvolvedor Full Stack",
+  "subtitulo": "Especialista em Node.js e React",
+  "descricao": "Apaixonado por tecnologia e inovação. Criando soluções web há mais de 5 anos."
+}
+
+###
+
+### 5️⃣ PASSO 5: Criar Config (definir stacks e projetos a partir da tabela config)
+### ⚠️ SUBSTITUA o "profileId" abaixo pelo UUID do profile (passo 2)
+POST http://localhost:3000/config
+Content-Type: application/json
+
+{
+  "profileId": "COLE_AQUI_O_UUID_DO_PROFILE",
+  "stacks": 8,
+  "projetos": 12
+}
+
+###
+
+### 6️⃣ PASSO EXTRA: Criar Social Accounts (ROTA NÃO IMPLEMENTADA)
+# POST http://localhost:3000/social
+# Content-Type: application/json
+
+# {
+#   "profileId": 1,
+#   "plataforma": "github",
+#   "url": "https://github.com/joaosilva",
+#   "ordem": 1
+# }
+
+###
+
+# POST http://localhost:3000/social
+# Content-Type: application/json
+
+# {
+#   "profileId": 1,
+#   "plataforma": "instagram",
+#   "url": "https://instagram.com/joaosilva",
+#   "ordem": 2
+# }
+
+###
+
+### 7️⃣ PASSO EXTRA: Criar Projetos (ROTA NÃO IMPLEMENTADA)
+# POST http://localhost:3000/projetos
+# Content-Type: application/json
+
+# {
+#   "profileId": 1,
+#   "nome": "Sistema de Gestão",
+#   "descricao": "Sistema completo para gestão empresarial",
+#   "gif": "https://example.com/projeto1.gif"
+# }
+
+###
+
+# POST http://localhost:3000/projetos
+# Content-Type: application/json
+
+# {
+#   "profileId": 1,
+#   "nome": "App Mobile",
+#   "descricao": "Aplicativo mobile para delivery",
+#   "gif": "https://example.com/projeto2.gif"
+# }
+
+###
+
+### ========================================
+### TESTES DE VERIFICAÇÃO
+### ========================================
+
+### ✅ Verificar se o usuário foi criado (IMPLEMENTAR ROTA GET)
+# GET http://localhost:3000/users/1
+
+###
+
+### ✅ Verificar se o profile foi criado com template (IMPLEMENTAR ROTA GET)
+# GET http://localhost:3000/profile/1
+
+###
+
+### ✅ Verificar se a page foi criada com relacionamento correto (IMPLEMENTAR ROTA GET)
+# GET http://localhost:3000/pages/1
+
+###
+
+### ✅ Verificar legenda do perfil (IMPLEMENTAR ROTA GET)
+# GET http://localhost:3000/legenda/profile/1
+
+###
+
+### ✅ Verificar config do perfil (IMPLEMENTAR ROTA GET)
+# GET http://localhost:3000/config/profile/1
+
+###
+
+### ✅ Verificar social accounts do perfil (ROTA NÃO IMPLEMENTADA)
+# GET http://localhost:3000/social/profile/1
+
+###
+
+### ✅ Verificar projetos do perfil (ROTA NÃO IMPLEMENTADA)
+# GET http://localhost:3000/projetos/profile/1
+
+###
+
+### ✅ Buscar página pelo slug (IMPLEMENTAR ROTA GET)
+# GET http://localhost:3000/pages/slug/joaosilva
+
+###
+
+### ========================================
+### TESTE DE RELACIONAMENTOS - BUSCAR TUDO
+### ========================================
+
+### 🔍 Buscar profile completo com todos os relacionamentos (IMPLEMENTAR ROTA GET)
+# GET http://localhost:3000/profile/1/complete
+
+###
+
+### ========================================
+### FLUXO 2: CRIAR SEGUNDA PÁGINA
+### ========================================
+
+### Criar segunda página para o mesmo perfil
+### ⚠️ SUBSTITUA o "profileId" pelo UUID do profile
+POST http://localhost:3000/pages
+Content-Type: application/json
+
+{
+  "profileId": "COLE_AQUI_O_UUID_DO_PROFILE",
+  "titulo": "Portfólio",
+  "slug": "joaosilva-portfolio",
+  "ordem": 2
+}
+
+###
+
+### Verificar todas as páginas do perfil (IMPLEMENTAR ROTA GET)
+# GET http://localhost:3000/pages/profile/COLE_AQUI_O_UUID_DO_PROFILE
+
+###
+
+### ========================================
+### 📝 EXEMPLO PRÁTICO COM UUIDs
+### ========================================
+### Use este exemplo após criar um usuário real
+### e copiar o UUID retornado
+
+### EXEMPLO: Criar Profile com UUID real
+# POST http://localhost:3000/profile
+# Content-Type: application/json
+#
+# {
+#   "userId": "123e4567-e89b-12d3-a456-426614174000",
+#   "username": "joaosilva2",
+#   "bio": "Desenvolvedor",
+#   "templateType": "template_01"
+# }
+
+###

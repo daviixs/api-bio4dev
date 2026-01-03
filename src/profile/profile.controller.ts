@@ -1,0 +1,52 @@
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  ApiBody,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
+import { ProfileService } from './profile.service';
+import { ProfileDto } from 'src/dto/profiles.dto';
+
+@ApiTags('profile')
+@Controller('profile')
+export class ProfileController {
+  constructor(private readonly profileService: ProfileService) {}
+
+  @ApiOperation({
+    summary: 'Criar profile',
+    description: 'Cria um perfil vinculado a um usuario',
+  })
+  @ApiBody({ type: ProfileDto })
+  @ApiCreatedResponse({ description: 'Perfil criado com sucesso' })
+  @Post()
+  async create(@Body() data: ProfileDto) {
+    return this.profileService.create(data);
+  }
+
+  @ApiOperation({
+    summary: 'Buscar profile por ID',
+    description: 'Retorna os dados de um perfil pelo seu ID',
+  })
+  @ApiParam({ name: 'id', description: 'UUID do profile', type: 'string' })
+  @ApiOkResponse({ description: 'Perfil encontrado com sucesso' })
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.profileService.findOne(id);
+  }
+
+  @ApiOperation({
+    summary: 'Atualizar profile',
+    description:
+      'Atualiza os dados de um perfil existente (incluindo theme e mainColor)',
+  })
+  @ApiParam({ name: 'id', description: 'UUID do profile', type: 'string' })
+  @ApiBody({ type: ProfileDto })
+  @ApiOkResponse({ description: 'Perfil atualizado com sucesso' })
+  @Patch(':id')
+  async updateProfile(@Param('id') id: string, @Body() data: ProfileDto) {
+    return this.profileService.updateProfile(id, data);
+  }
+}

@@ -1,0 +1,67 @@
+### Criar nova página
+POST http://localhost:3000/pages
+Content-Type: application/json
+
+{
+  "profile_id": 1,
+  "titulo": "Minha Primeira Página",
+  "slug": "davixs",
+  "ordem": 1
+}
+
+###
+
+### Criar página 2
+POST http://localhost:3000/pages
+Content-Type: application/json
+
+{
+  "profile_id": 1,
+  "titulo": "Sobre Mim",
+  "slug": "sobre-mim",
+  "ordem": 2
+}
+
+###
+
+### Criar página 3
+POST http://localhost:3000/pages
+Content-Type: application/json
+
+{
+  "profile_id": 1,
+  "titulo": "Portfólio",
+  "slug": "portfolio"
+}
+
+###
+
+### Buscar todas as páginas
+GET http://localhost:3000/pages
+
+###
+
+### Buscar página por ID
+GET http://localhost:3000/pages/1
+
+###
+
+### Buscar páginas por profile_id
+GET http://localhost:3000/pages/profile/1
+
+###
+
+### Atualizar página
+PUT http://localhost:3000/pages/1
+Content-Type: application/json
+
+{
+  "titulo": "Minha Página Atualizada",
+  "slug": "minha-pagina-atualizada",
+  "ordem": 1
+}
+
+###
+
+### Deletar página
+DELETE http://localhost:3000/pages/1
