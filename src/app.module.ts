@@ -15,6 +15,8 @@ import { ConfigController } from './config/config.controller';
 import { ConfigService } from './config/config.service';
 import { ProjectsController } from './projects/projects.controller';
 import { ProjectsService } from './projects/projects.service';
+import { SocialController } from './social/social.controller';
+import { SocialService } from './social/social.service';
 
 @Module({
   imports: [PrismaModule],
@@ -26,6 +28,7 @@ import { ProjectsService } from './projects/projects.service';
     LegendaController,
     ConfigController,
     ProjectsController,
+    SocialController,
   ],
   providers: [
     AppService,
@@ -36,6 +39,7 @@ import { ProjectsService } from './projects/projects.service';
     LegendaService,
     ConfigService,
     ProjectsService,
+    SocialService,
   ],
 })
 export class AppModule {}

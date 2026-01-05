@@ -18,11 +18,11 @@ Esta seção define a ordem exata de execução para completar o backend.
 **Objetivo:** Permitir que o frontend carregue a página inicial com dados reais básicos (Hero, Projetos, Redes Sociais).
 
 1.  **Atualização do Schema Prisma (`schema.prisma`)**
-    *   [ ] Adicionar campo `greeting` (String?) no model `Legenda`.
-    *   [ ] Adicionar campos `demoLink` (String?), `codeLink` (String?) e `ordem` (Int) no model `Projeto`.
-    *   [ ] Adicionar `linkedin` e `twitter` no enum `Plataforma`.
-    *   [ ] Criar models para `Social` (se não existir ou estiver incompleto), `TechStack`, `Technology`, `WorkExperience`, `WorkTechnology`, `WorkResponsibility` e `Footer`.
-    *   [ ] Executar migration: `npx prisma migrate dev --name update_portfolio_schema`
+    *   [x] Adicionar campo `greeting` (String?) no model `Legenda`.
+    *   [x] Adicionar campos `demoLink` (String?), `codeLink` (String?) e `ordem` (Int) no model `Projeto`.
+    *   [x] Adicionar `linkedin` e `twitter` no enum `Plataforma`.
+    *   [x] Criar models para `Social` (se não existir ou estiver incompleto), `TechStack`, `Technology`, `WorkExperience`, `WorkTechnology`, `WorkResponsibility` e `Footer`.
+    *   [x] Executar migration: `npx prisma migrate dev --name update_portfolio_schema`
 
 2.  **Módulo Social (Novo)**
     *   [ ] Criar `src/social/social.module.ts`
@@ -144,6 +144,6 @@ export class ProjectsController {
 
 | Área | Status | Progresso |
 |------|--------|-----------|
-| **Schema Prisma** | ⚠️ Parcial | 50% |
+| **Schema Prisma** | ✅ Completo | 100% |
 | **Módulos NestJS** | ⚠️ Parcial | 40% |
 | **Infraestrutura** | ✅ Completo | 95% |
