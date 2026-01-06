@@ -8,7 +8,7 @@ import {
   MaxLength,
 } from 'class-validator';
 
-export class CreateLegendaDto {
+export class LegendaDto {
   @ApiProperty({
     description: 'UUID v4 do profile relacionado',
     example: 'e2af5ea1-9938-4a4a-96d9-45d2a8c2d83b',

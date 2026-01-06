@@ -9,7 +9,7 @@ import {
   IsUUID,
 } from 'class-validator';
 
-export class CreateUserDto {
+export class UserDto {
   @ApiProperty({
     description: 'Email do usuario',
     example: 'usuario@empresa.com',

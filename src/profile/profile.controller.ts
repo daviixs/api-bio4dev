@@ -8,7 +8,11 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ProfileService } from './profile.service';
-import { ProfileDto } from 'src/dto/profiles.dto';
+import {
+  CreateProfileDto,
+  UpdateProfileDto,
+  ProfileResponseDto,
+} from 'src/dto/profiles.dto';
 
 @ApiTags('profile')
 @Controller('profile')
@@ -19,10 +23,13 @@ export class ProfileController {
     summary: 'Criar profile',
     description: 'Cria um perfil vinculado a um usuario',
   })
-  @ApiBody({ type: ProfileDto })
-  @ApiCreatedResponse({ description: 'Perfil criado com sucesso' })
+  @ApiBody({ type: CreateProfileDto })
+  @ApiCreatedResponse({
+    description: 'Perfil criado com sucesso',
+    type: ProfileResponseDto,
+  })
   @Post()
-  async create(@Body() data: ProfileDto) {
+  async create(@Body() data: CreateProfileDto) {
     return this.profileService.create(data);
   }
 
@@ -31,7 +38,10 @@ export class ProfileController {
     description: 'Retorna os dados de um perfil pelo seu ID',
   })
   @ApiParam({ name: 'id', description: 'UUID do profile', type: 'string' })
-  @ApiOkResponse({ description: 'Perfil encontrado com sucesso' })
+  @ApiOkResponse({
+    description: 'Perfil encontrado com sucesso',
+    type: ProfileResponseDto,
+  })
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.profileService.findOne(id);
@@ -43,10 +53,13 @@ export class ProfileController {
       'Atualiza os dados de um perfil existente (incluindo theme e mainColor)',
   })
   @ApiParam({ name: 'id', description: 'UUID do profile', type: 'string' })
-  @ApiBody({ type: ProfileDto })
-  @ApiOkResponse({ description: 'Perfil atualizado com sucesso' })
+  @ApiBody({ type: UpdateProfileDto })
+  @ApiOkResponse({
+    description: 'Perfil atualizado com sucesso',
+    type: ProfileResponseDto,
+  })
   @Patch(':id')
-  async updateProfile(@Param('id') id: string, @Body() data: ProfileDto) {
+  async updateProfile(@Param('id') id: string, @Body() data: UpdateProfileDto) {
     return this.profileService.updateProfile(id, data);
   }
 }

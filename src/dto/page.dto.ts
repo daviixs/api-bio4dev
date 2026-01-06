@@ -9,7 +9,7 @@ import {
   Matches,
 } from 'class-validator';
 
-export class CreatePageDto {
+export class PageDto {
   @ApiProperty({
     description: 'UUID v4 do profile dono da pagina',
     example: 'a1b2c3d4-5678-4abc-8def-1234567890ab',

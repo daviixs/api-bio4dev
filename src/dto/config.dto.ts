@@ -7,7 +7,7 @@ import {
   IsUUID,
 } from 'class-validator';
 
-export class CreateConfigDto {
+export class ConfigDto {
   @ApiProperty({
     description: 'UUID v4 do profile ao qual a configuracao pertence',
     example: 'd77f54f9-0041-4c4b-b6c1-8ea2d9a67861',

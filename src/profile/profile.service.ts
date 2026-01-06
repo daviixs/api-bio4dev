@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
-import { ProfileDto } from 'src/dto/profiles.dto';
+import { CreateProfileDto, UpdateProfileDto } from 'src/dto/profiles.dto';
 
 @Injectable()
 export class ProfileService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: ProfileDto) {
+  async create(data: CreateProfileDto) {
     const profile = await this.prisma.profile.create({
       data: {
         userId: data.userId,
@@ -32,7 +32,7 @@ export class ProfileService {
     };
   }
 
-  async updateProfile(id: string, data: ProfileDto) {
+  async updateProfile(id: string, data: UpdateProfileDto) {
     return this.prisma.profile.update({
       where: { id },
       data: {
