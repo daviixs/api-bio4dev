@@ -17,6 +17,8 @@ import { ProjectsController } from './projects/projects.controller';
 import { ProjectsService } from './projects/projects.service';
 import { SocialController } from './social/social.controller';
 import { SocialService } from './social/social.service';
+import { TechstackController } from './techstack/techstack.controller';
+import { TechstackService } from './techstack/techstack.service';
 
 @Module({
   imports: [PrismaModule],
@@ -29,6 +31,7 @@ import { SocialService } from './social/social.service';
     ConfigController,
     ProjectsController,
     SocialController,
+    TechstackController,
   ],
   providers: [
     AppService,
@@ -40,6 +43,7 @@ import { SocialService } from './social/social.service';
     ConfigService,
     ProjectsService,
     SocialService,
+    TechstackService,
   ],
 })
 export class AppModule {}
