@@ -22,6 +22,7 @@ export class ProjectsService {
   async GetAllProjects(profileId?: string) {
     return this.prisma.projeto.findMany({
       where: profileId ? { profileId } : {},
+      orderBy: { ordem: 'asc' },
     });
   }
 

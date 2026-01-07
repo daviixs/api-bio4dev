@@ -64,4 +64,48 @@ export class ProfileService {
       },
     });
   }
+
+  async findByUsername(username: string) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { username },
+      include: {
+        legendas: true,
+        social: {
+          orderBy: { ordem: 'asc' },
+        },
+        config: true,
+        projetos: {
+          orderBy: { ordem: 'asc' },
+        },
+        techStack: {
+          include: {
+            technologies: {
+              orderBy: { ordem: 'asc' },
+            },
+          },
+        },
+        workHistory: {
+          include: {
+            technologies: true,
+            responsibilities: {
+              orderBy: { ordem: 'asc' },
+            },
+          },
+          orderBy: { ordem: 'asc' },
+        },
+        footer: true,
+      },
+    });
+
+    if (!profile) {
+      throw new Error(`Profile com username "${username}" não encontrado`);
+    }
+
+    // Retorna apenas se o perfil estiver publicado
+    if (!profile.published) {
+      throw new Error(`Profile "${username}" não está publicado`);
+    }
+
+    return profile;
+  }
 }

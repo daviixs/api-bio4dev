@@ -48,6 +48,25 @@ export class ProfileController {
   }
 
   @ApiOperation({
+    summary: 'Buscar profile público por username',
+    description:
+      'Retorna o perfil completo com todos os relacionamentos (legenda, social, config, projetos, techStack, workHistory, footer). Apenas perfis publicados são retornados.',
+  })
+  @ApiParam({
+    name: 'username',
+    description: 'Username único do profile',
+    type: 'string',
+    example: 'joaosilva',
+  })
+  @ApiOkResponse({
+    description: 'Perfil público encontrado com sucesso',
+  })
+  @Get('username/:username')
+  async findByUsername(@Param('username') username: string) {
+    return this.profileService.findByUsername(username);
+  }
+
+  @ApiOperation({
     summary: 'Atualizar profile',
     description:
       'Atualiza os dados de um perfil existente (incluindo theme e mainColor)',

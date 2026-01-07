@@ -19,6 +19,10 @@ import { SocialController } from './social/social.controller';
 import { SocialService } from './social/social.service';
 import { TechstackController } from './techstack/techstack.controller';
 import { TechstackService } from './techstack/techstack.service';
+import { WorkexperienceService } from './workexperince/workexperience.service';
+import { WorkexperinceController } from './workexperince/workexperience.controller';
+import { FooterController } from './footer/footer.controller';
+import { FooterService } from './footer/footer.service';
 
 @Module({
   imports: [PrismaModule],
@@ -32,6 +36,8 @@ import { TechstackService } from './techstack/techstack.service';
     ProjectsController,
     SocialController,
     TechstackController,
+    WorkexperinceController,
+    FooterController,
   ],
   providers: [
     AppService,
@@ -44,6 +50,8 @@ import { TechstackService } from './techstack/techstack.service';
     ProjectsService,
     SocialService,
     TechstackService,
+    WorkexperienceService,
+    FooterService,
   ],
 })
 export class AppModule {}
