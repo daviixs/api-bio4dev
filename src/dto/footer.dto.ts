@@ -6,6 +6,7 @@ import {
   IsString,
   IsUrl,
   IsUUID,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateFooterDto {
@@ -46,6 +47,7 @@ export class CreateFooterDto {
     example: 'https://github.com/usuario',
   })
   @IsOptional()
+  @ValidateIf((o) => o.github !== '' && o.github !== null && o.github !== undefined)
   @IsUrl({}, { message: 'Github deve ser uma URL valida' })
   github?: string;
 
@@ -54,6 +56,7 @@ export class CreateFooterDto {
     example: 'https://linkedin.com/in/usuario',
   })
   @IsOptional()
+  @ValidateIf((o) => o.linkedin !== '' && o.linkedin !== null && o.linkedin !== undefined)
   @IsUrl({}, { message: 'Linkedin deve ser uma URL valida' })
   linkedin?: string;
 
@@ -62,6 +65,7 @@ export class CreateFooterDto {
     example: 'https://twitter.com/usuario',
   })
   @IsOptional()
+  @ValidateIf((o) => o.twitter !== '' && o.twitter !== null && o.twitter !== undefined)
   @IsUrl({}, { message: 'Twitter deve ser uma URL valida' })
   twitter?: string;
 
@@ -72,6 +76,22 @@ export class CreateFooterDto {
   @IsNotEmpty({ message: 'CopyrightName e obrigatorio' })
   @IsString({ message: 'CopyrightName deve ser uma string' })
   copyrightName: string;
+
+  @ApiPropertyOptional({
+    description: 'Texto "Feito com"',
+    example: 'Feito com ❤️',
+  })
+  @IsOptional()
+  @IsString({ message: 'MadeWith deve ser uma string' })
+  madeWith?: string;
+
+  @ApiPropertyOptional({
+    description: 'URL do currículo para download',
+    example: 'https://exemplo.com/curriculo.pdf',
+  })
+  @IsOptional()
+  @IsString({ message: 'ResumeUrl deve ser uma string' })
+  resumeUrl?: string;
 }
 
 export class UpdateFooterDto {
@@ -104,6 +124,7 @@ export class UpdateFooterDto {
     example: 'https://github.com/novo-usuario',
   })
   @IsOptional()
+  @ValidateIf((o) => o.github !== '' && o.github !== null && o.github !== undefined)
   @IsUrl({}, { message: 'Github deve ser uma URL valida' })
   github?: string;
 
@@ -112,6 +133,7 @@ export class UpdateFooterDto {
     example: 'https://linkedin.com/in/novo-usuario',
   })
   @IsOptional()
+  @ValidateIf((o) => o.linkedin !== '' && o.linkedin !== null && o.linkedin !== undefined)
   @IsUrl({}, { message: 'Linkedin deve ser uma URL valida' })
   linkedin?: string;
 
@@ -120,6 +142,7 @@ export class UpdateFooterDto {
     example: 'https://twitter.com/novo-usuario',
   })
   @IsOptional()
+  @ValidateIf((o) => o.twitter !== '' && o.twitter !== null && o.twitter !== undefined)
   @IsUrl({}, { message: 'Twitter deve ser uma URL valida' })
   twitter?: string;
 
@@ -130,6 +153,22 @@ export class UpdateFooterDto {
   @IsOptional()
   @IsString({ message: 'CopyrightName deve ser uma string' })
   copyrightName?: string;
+
+  @ApiPropertyOptional({
+    description: 'Texto "Feito com"',
+    example: 'Feito com ❤️',
+  })
+  @IsOptional()
+  @IsString({ message: 'MadeWith deve ser uma string' })
+  madeWith?: string;
+
+  @ApiPropertyOptional({
+    description: 'URL do currículo para download',
+    example: 'https://exemplo.com/novo-curriculo.pdf',
+  })
+  @IsOptional()
+  @IsString({ message: 'ResumeUrl deve ser uma string' })
+  resumeUrl?: string;
 }
 
 export class FooterResponseDto {
@@ -186,6 +225,18 @@ export class FooterResponseDto {
     example: 'Meu Nome',
   })
   copyrightName: string;
+
+  @ApiPropertyOptional({
+    description: 'Texto "Feito com"',
+    example: 'Feito com ❤️',
+  })
+  madeWith?: string;
+
+  @ApiPropertyOptional({
+    description: 'URL do currículo para download',
+    example: 'https://exemplo.com/curriculo.pdf',
+  })
+  resumeUrl?: string;
 
   @ApiProperty({
     description: 'Data de criacao',

@@ -37,18 +37,34 @@ model Profile {
   createdAt     DateTime      @default(now())
 
   // Relations
-  user        User      @relation(fields: [userId], references: [id])
-  pages       Page[]
-  social      Social[]
-  legendas    Legenda[]
-  projetos    Projeto[]
-  config      Config?
-  techStack   TechStack?
-  workHistory WorkExperience[]
-  footer      Footer?
-  templates   Template[]
+  user         User           @relation(fields: [userId], references: [id])
+  pages        Page[]
+  social       Social[]
+  legendas     Legenda[]
+  projetos     Projeto[]
+  config       Config?
+  techStack    TechStack?
+  workHistory  WorkExperience[]
+  footer       Footer?
+  templates    Template[]
+  previewTokens PreviewToken[]
 
   @@index([userId])
+}
+
+
+// ------------------ PREVIEW TOKEN ------------------
+model PreviewToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  profileId String   @db.Uuid
+  token     String   @unique @default(uuid()) @db.Uuid
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([profileId])
 }
 
 
@@ -319,6 +335,8 @@ model Footer {
   linkedin      String?   @db.VarChar(100)
   twitter       String?   @db.VarChar(100)
   copyrightName String    @db.VarChar(100)
+  madeWith      String?   @db.Text
+  resumeUrl     String?   @db.Text
 
   profile       Profile   @relation(fields: [profileId], references: [id])
 

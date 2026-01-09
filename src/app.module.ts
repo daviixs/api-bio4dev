@@ -23,6 +23,7 @@ import { WorkexperienceService } from './workexperince/workexperience.service';
 import { WorkexperinceController } from './workexperince/workexperience.controller';
 import { FooterController } from './footer/footer.controller';
 import { FooterService } from './footer/footer.service';
+import { UploadController } from './footer/upload.controller';
 
 @Module({
   imports: [PrismaModule],
@@ -38,6 +39,7 @@ import { FooterService } from './footer/footer.service';
     TechstackController,
     WorkexperinceController,
     FooterController,
+    UploadController,
   ],
   providers: [
     AppService,

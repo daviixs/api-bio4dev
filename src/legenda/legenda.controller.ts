@@ -12,7 +12,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { LegendaDto } from 'src/dto/legenda.dto';
+import { LegendaDto, UpdateLegendaDto } from 'src/dto/legenda.dto';
 import { LegendaService } from './legenda.service';
 
 @ApiTags('legenda')
@@ -36,12 +36,12 @@ export class LegendaController {
     summary: 'Atualizar legenda',
     description: 'Atualiza dados de legenda existentes',
   })
-  @ApiBody({ type: LegendaDto })
+  @ApiBody({ type: UpdateLegendaDto })
   @ApiCreatedResponse({ description: 'Legenda atualizada com sucesso' })
   @Patch(':id')
   async updateLegenda(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
-    @Body() data: LegendaDto,
+    @Body() data: UpdateLegendaDto,
   ) {
     return this.legendaService.updateLegenda(id, data);
   }

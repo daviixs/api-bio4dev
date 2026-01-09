@@ -28,6 +28,8 @@ export class FooterService {
         linkedin: data.linkedin,
         twitter: data.twitter,
         copyrightName: data.copyrightName,
+        madeWith: data.madeWith,
+        resumeUrl: data.resumeUrl,
       },
     });
   }
@@ -83,6 +85,8 @@ export class FooterService {
         linkedin: data.linkedin,
         twitter: data.twitter,
         copyrightName: data.copyrightName,
+        madeWith: data.madeWith,
+        resumeUrl: data.resumeUrl,
       },
     });
   }
@@ -108,6 +112,8 @@ export class FooterService {
         linkedin: data.linkedin,
         twitter: data.twitter,
         copyrightName: data.copyrightName,
+        madeWith: data.madeWith,
+        resumeUrl: data.resumeUrl,
       },
     });
   }

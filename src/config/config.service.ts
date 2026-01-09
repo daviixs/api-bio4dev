@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
-import { ConfigDto } from 'src/dto/config.dto';
+import { ConfigDto, UpdateConfigDto } from 'src/dto/config.dto';
 
 @Injectable()
 export class ConfigService {
@@ -25,7 +25,7 @@ export class ConfigService {
     };
   }
 
-  async updateConfig(id: string, data: ConfigDto) {
+  async updateConfig(id: string, data: UpdateConfigDto) {
     return this.prisma.config.update({
       where: { id },
       data: {

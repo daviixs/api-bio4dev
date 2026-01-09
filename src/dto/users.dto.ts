@@ -73,6 +73,24 @@ export class UpdateUserDto {
   nome?: string;
 }
 
+export class LoginDto {
+  @ApiProperty({
+    description: 'Email do usuario',
+    example: 'usuario@empresa.com',
+  })
+  @IsNotEmpty({ message: 'Email e obrigatorio' })
+  @IsEmail({}, { message: 'Email invalido' })
+  email: string;
+
+  @ApiProperty({
+    description: 'Senha do usuario',
+    example: 's3nh@Segura',
+  })
+  @IsNotEmpty({ message: 'Senha e obrigatoria' })
+  @IsString({ message: 'Senha deve ser uma string' })
+  senha: string;
+}
+
 export class UserResponseDto {
   @ApiProperty({
     description: 'UUID v4 do usuario',

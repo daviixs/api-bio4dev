@@ -25,6 +25,36 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## 🆕 Sistema de Preview Temporário
+
+Sistema completo de preview temporário implementado! Permite visualizar portfólios não publicados através de links com tokens que expiram em 24 horas.
+
+### Recursos:
+
+- ✅ Geração de tokens temporários seguros
+- ✅ Visualização de perfis não publicados
+- ✅ Links compartilháveis com expiração automática
+- ✅ Segurança com UUIDs aleatórios
+
+### Documentação:
+
+- 📄 [SISTEMA_PREVIEW_IMPLEMENTADO.md](SISTEMA_PREVIEW_IMPLEMENTADO.md) - Documentação completa
+- 📄 [GUIA_RAPIDO_PREVIEW.md](GUIA_RAPIDO_PREVIEW.md) - Início rápido (5 min)
+- 📄 [ROTAS_PROFILE_STATUS.md](ROTAS_PROFILE_STATUS.md) - Status das rotas
+
+### Testes:
+
+```bash
+# PowerShell
+cd test
+.\test-preview-system.ps1
+
+# REST Client (VS Code)
+# Abrir: test/preview-system.http
+```
+
+---
+
 ## Project setup
 
 ```bash

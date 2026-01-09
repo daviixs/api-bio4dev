@@ -1,10 +1,35 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
 import { CreateProfileDto, UpdateProfileDto } from 'src/dto/profiles.dto';
 
 @Injectable()
 export class ProfileService {
   constructor(private prisma: PrismaService) {}
+
+  async findAll() {
+    return this.prisma.profile.findMany({
+      select: {
+        id: true,
+        userId: true,
+        username: true,
+        bio: true,
+        avatarUrl: true,
+        theme: true,
+        mainColor: true,
+        templateType: true,
+        published: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
 
   async create(data: CreateProfileDto) {
     const profile = await this.prisma.profile.create({
@@ -65,7 +90,7 @@ export class ProfileService {
     });
   }
 
-  async findByUsername(username: string) {
+  async findByUsername(username: string, previewToken?: string) {
     const profile = await this.prisma.profile.findUnique({
       where: { username },
       include: {
@@ -98,14 +123,114 @@ export class ProfileService {
     });
 
     if (!profile) {
-      throw new Error(`Profile com username "${username}" não encontrado`);
+      throw new NotFoundException(
+        `Profile com username "${username}" não encontrado`,
+      );
     }
 
-    // Retorna apenas se o perfil estiver publicado
+    // Se tem token de preview, valida o token
+    if (previewToken) {
+      const validToken = await this.prisma.previewToken.findFirst({
+        where: {
+          token: previewToken,
+          profileId: profile.id,
+          expiresAt: {
+            gt: new Date(), // Token não expirado
+          },
+        },
+      });
+
+      if (!validToken) {
+        throw new UnauthorizedException(
+          'Token de preview inválido ou expirado',
+        );
+      }
+
+      // Token válido - retorna perfil mesmo não publicado
+      return profile;
+    }
+
+    // Sem token - só retorna se publicado
     if (!profile.published) {
-      throw new Error(`Profile "${username}" não está publicado`);
+      throw new ForbiddenException(`Profile "${username}" não está publicado`);
     }
 
     return profile;
+  }
+
+  async findCompleteById(id: string) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id },
+      include: {
+        legendas: true,
+        social: {
+          orderBy: { ordem: 'asc' },
+        },
+        config: true,
+        projetos: {
+          orderBy: { ordem: 'asc' },
+        },
+        techStack: {
+          include: {
+            technologies: {
+              orderBy: { ordem: 'asc' },
+            },
+          },
+        },
+        workHistory: {
+          include: {
+            technologies: true,
+            responsibilities: {
+              orderBy: { ordem: 'asc' },
+            },
+          },
+          orderBy: { ordem: 'asc' },
+        },
+        footer: true,
+      },
+    });
+
+    if (!profile) {
+      throw new NotFoundException(`Profile com ID "${id}" não encontrado`);
+    }
+
+    return profile;
+  }
+
+  async generatePreviewToken(profileId: string) {
+    // Verifica se o perfil existe
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Profile não encontrado');
+    }
+
+    // Remove tokens antigos expirados deste perfil
+    await this.prisma.previewToken.deleteMany({
+      where: {
+        profileId,
+        expiresAt: {
+          lt: new Date(),
+        },
+      },
+    });
+
+    // Cria novo token válido por 24 horas
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+
+    const previewToken = await this.prisma.previewToken.create({
+      data: {
+        profileId,
+        expiresAt,
+      },
+    });
+
+    return {
+      token: previewToken.token,
+      expiresAt: previewToken.expiresAt.toISOString(),
+    };
   }
 }

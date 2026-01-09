@@ -1,0 +1,27 @@
+### Teste do Sistema de Preview
+
+# 1. Verificar se a API está online
+GET http://localhost:5000
+
+###
+
+# 2. Listar perfis (para pegar um ID)
+GET http://localhost:5000/profile
+
+###
+
+# 3. Gerar token de preview (SUBSTITUA o ID pelo ID real do seu perfil)
+POST http://localhost:5000/profile/SEU-PROFILE-ID-AQUI/preview-token
+Content-Type: application/json
+
+###
+
+# 4. Buscar perfil por username SEM token (perfil não publicado)
+GET http://localhost:5000/profile/username/seu-username
+
+###
+
+# 5. Buscar perfil por username COM token (funciona mesmo não publicado)
+GET http://localhost:5000/profile/username/seu-username?preview=TOKEN-GERADO-AQUI
+
+###

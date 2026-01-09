@@ -54,13 +54,13 @@ export class TechnologyDto {
 }
 
 export class CreateTechStackDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'UUID v4 do profile relacionado',
     example: 'e2af5ea1-9938-4a4a-96d9-45d2a8c2d83b',
   })
-  @IsNotEmpty({ message: 'profileId e obrigatorio' })
+  @IsOptional()
   @IsUUID('4', { message: 'profileId deve ser um UUID v4 valido' })
-  profileId: string;
+  profileId?: string;
 
   @ApiProperty({
     description: 'Titulo da secao de tecnologia',
@@ -90,6 +90,14 @@ export class CreateTechStackDto {
 }
 
 export class UpdateTechStackDto {
+  @ApiPropertyOptional({
+    description: 'UUID v4 do profile relacionado',
+    example: 'e2af5ea1-9938-4a4a-96d9-45d2a8c2d83b',
+  })
+  @IsOptional()
+  @IsUUID('4', { message: 'profileId deve ser um UUID v4 valido' })
+  profileId?: string;
+
   @ApiPropertyOptional({
     description: 'Titulo da secao de tecnologia',
     example: 'Minhas Stacks',

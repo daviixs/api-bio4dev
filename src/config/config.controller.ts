@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Body, Controller, Param, Post, Patch } from '@nestjs/common';
 import {
   ApiBody,
   ApiCreatedResponse,
@@ -6,7 +6,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ConfigService } from './config.service';
-import { ConfigDto } from 'src/dto/config.dto';
+import { ConfigDto, UpdateConfigDto } from 'src/dto/config.dto';
 
 @ApiTags('config')
 @Controller('config')
@@ -29,10 +29,10 @@ export class ConfigController {
     summary: 'Atualizar configuracao',
     description: 'Atualiza stacks e projetos de uma configuracao existente',
   })
-  @ApiBody({ type: ConfigDto })
+  @ApiBody({ type: UpdateConfigDto })
   @ApiCreatedResponse({ description: 'Configuracao atualizada com sucesso' })
-  @Post(':id')
-  async updateConfig(@Param('id') id: string, @Body() data: ConfigDto) {
+  @Patch(':id')
+  async updateConfig(@Param('id') id: string, @Body() data: UpdateConfigDto) {
     return this.configService.updateConfig(id, data);
   }
 

@@ -134,6 +134,17 @@ export class WorkexperienceService {
 
   async deleteWorkExperience(id: string) {
     await this.findOne(id);
+
+    // Delete related records first to avoid foreign key constraint violations
+    await this.prisma.workTechnology.deleteMany({
+      where: { workExperienceId: id },
+    });
+
+    await this.prisma.workResponsibility.deleteMany({
+      where: { workExperienceId: id },
+    });
+
+    // Finally delete the main record
     return this.prisma.workExperience.delete({
       where: { id },
     });

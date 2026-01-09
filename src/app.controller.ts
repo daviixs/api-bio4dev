@@ -9,7 +9,8 @@ export class AppController {
 
   @ApiOperation({
     summary: 'Healthcheck simples',
-    description: 'Retorna uma mensagem de status para verificar se a API esta online',
+    description:
+      'Retorna uma mensagem de status para verificar se a API esta online',
   })
   @ApiOkResponse({ description: 'API respondendo com sucesso' })
   @Get()
