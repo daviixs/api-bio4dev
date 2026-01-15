@@ -5,6 +5,11 @@ generator client {
   moduleFormat = "cjs"
 }
 
+generator erd {
+  provider = "prisma-erd-generator"
+  theme = "dark"
+}
+
 datasource db {
   provider = "postgresql"
 }
@@ -134,6 +139,13 @@ enum Plataforma {
   github
   linkedin
   twitter
+  facebook
+  figma
+  devto
+  email
+  behance
+  dribbble
+  medium
 }
 
 
@@ -166,6 +178,7 @@ model Projeto {
   codeLink  String?   @db.Text
   ordem     Int       @default(0)
   gif       String
+  tags      String[]  @default([])
   createdAt DateTime  @default(now())
 
   profile   Profile   @relation(fields: [profileId], references: [id])

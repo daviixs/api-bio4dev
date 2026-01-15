@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsArray,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -70,6 +71,15 @@ export class CreateProjetoDto {
   @IsInt({ message: 'Ordem deve ser um numero inteiro' })
   @Min(0, { message: 'A ordem deve ser maior ou igual a 0' })
   ordem?: number;
+
+  @ApiPropertyOptional({
+    description: 'Tags/tecnologias usadas no projeto',
+    example: ['React', 'TypeScript', 'Node.js'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsString({ each: true, message: 'Cada tag deve ser uma string' })
+  tags?: string[];
 }
 
 export class UpdateProjetoDto {
@@ -124,6 +134,15 @@ export class UpdateProjetoDto {
   @IsInt({ message: 'Ordem deve ser um numero inteiro' })
   @Min(0, { message: 'A ordem deve ser maior ou igual a 0' })
   ordem?: number;
+
+  @ApiPropertyOptional({
+    description: 'Tags/tecnologias usadas no projeto',
+    example: ['React', 'TypeScript', 'Tailwind CSS'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsString({ each: true, message: 'Cada tag deve ser uma string' })
+  tags?: string[];
 }
 
 export class ProjetoResponseDto {

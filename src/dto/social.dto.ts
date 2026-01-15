@@ -16,6 +16,13 @@ export enum Plataforma {
   github = 'github',
   linkedin = 'linkedin',
   twitter = 'twitter',
+  facebook = 'facebook',
+  figma = 'figma',
+  devto = 'devto',
+  email = 'email',
+  behance = 'behance',
+  dribbble = 'dribbble',
+  medium = 'medium',
 }
 
 export class CreateSocialDto {
