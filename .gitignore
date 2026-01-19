@@ -56,3 +56,23 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
+
+# Additional sensitive files
+# Database files (if using local databases)
+*.db
+*.sqlite
+*.sqlite3
+
+# Secrets and keys
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+
+# Uploads (uncomment if uploads contain sensitive data)
+# uploads/
+
+# Other potential sensitive files
+*.secret
+config/secrets.json
