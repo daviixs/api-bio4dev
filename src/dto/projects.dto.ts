@@ -8,6 +8,7 @@ import {
   IsUrl,
   IsUUID,
   Min,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateProjetoDto {
@@ -35,20 +36,24 @@ export class CreateProjetoDto {
   @IsString({ message: 'Descricao deve ser uma string' })
   descricao: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'URL do GIF ou imagem de capa',
     example: 'https://site.com/demo.gif',
   })
-  @IsNotEmpty({ message: 'Gif e obrigatorio' })
+  @IsOptional()
+  @ValidateIf((o) => o.gif !== '' && o.gif !== null && o.gif !== undefined)
   @IsString({ message: 'Gif deve ser uma string' })
   @IsUrl({}, { message: 'Gif deve ser uma URL valida' })
-  gif: string;
+  gif?: string;
 
   @ApiPropertyOptional({
     description: 'Link para demonstracao online',
     example: 'https://meu-projeto.com',
   })
   @IsOptional()
+  @ValidateIf(
+    (o) => o.demoLink !== '' && o.demoLink !== null && o.demoLink !== undefined,
+  )
   @IsString({ message: 'Demo link deve ser uma string' })
   @IsUrl({}, { message: 'Demo link deve ser uma URL valida' })
   demoLink?: string;
@@ -58,6 +63,9 @@ export class CreateProjetoDto {
     example: 'https://github.com/usuario/repo',
   })
   @IsOptional()
+  @ValidateIf(
+    (o) => o.codeLink !== '' && o.codeLink !== null && o.codeLink !== undefined,
+  )
   @IsString({ message: 'Code link deve ser uma string' })
   @IsUrl({}, { message: 'Code link deve ser uma URL valida' })
   codeLink?: string;
@@ -104,6 +112,7 @@ export class UpdateProjetoDto {
     example: 'https://site.com/demo-novo.gif',
   })
   @IsOptional()
+  @ValidateIf((o) => o.gif !== '' && o.gif !== null && o.gif !== undefined)
   @IsString({ message: 'Gif deve ser uma string' })
   @IsUrl({}, { message: 'Gif deve ser uma URL valida' })
   gif?: string;
@@ -113,6 +122,9 @@ export class UpdateProjetoDto {
     example: 'https://meu-projeto-novo.com',
   })
   @IsOptional()
+  @ValidateIf(
+    (o) => o.demoLink !== '' && o.demoLink !== null && o.demoLink !== undefined,
+  )
   @IsString({ message: 'Demo link deve ser uma string' })
   @IsUrl({}, { message: 'Demo link deve ser uma URL valida' })
   demoLink?: string;
@@ -122,6 +134,9 @@ export class UpdateProjetoDto {
     example: 'https://github.com/usuario/repo-novo',
   })
   @IsOptional()
+  @ValidateIf(
+    (o) => o.codeLink !== '' && o.codeLink !== null && o.codeLink !== undefined,
+  )
   @IsString({ message: 'Code link deve ser uma string' })
   @IsUrl({}, { message: 'Code link deve ser uma URL valida' })
   codeLink?: string;

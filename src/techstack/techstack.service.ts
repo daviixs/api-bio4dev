@@ -30,8 +30,10 @@ export class TechstackService {
     const exists = await this.prisma.techStack.findUnique({
       where: { profileId },
     });
+
+    // Se já existe, faz update ao invés de erro
     if (exists) {
-      throw new Error('TechStack already exists for this profile');
+      return this.update(profileId, dto);
     }
 
     return this.prisma.techStack.create({

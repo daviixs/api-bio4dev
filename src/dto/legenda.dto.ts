@@ -17,14 +17,13 @@ export class LegendaDto {
   @IsUUID('4', { message: 'profileId deve ser um UUID v4 valido' })
   profileId: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'URL da imagem que sera legendada',
     example: 'https://cdn.site.com/avatar.png',
   })
-  @IsNotEmpty({ message: 'Legenda foto e obrigatoria' })
+  @IsOptional()
   @IsString({ message: 'Legenda foto deve ser uma string' })
-  @IsUrl({}, { message: 'Legenda foto deve ser uma URL valida' })
-  legendaFoto: string;
+  legendaFoto?: string;
 
   @ApiPropertyOptional({
     description: 'Saudacao inicial (ex: Ola, eu sou)',
@@ -82,7 +81,6 @@ export class UpdateLegendaDto {
   })
   @IsOptional()
   @IsString({ message: 'Legenda foto deve ser uma string' })
-  @IsUrl({}, { message: 'Legenda foto deve ser uma URL valida' })
   legendaFoto?: string;
 
   @ApiPropertyOptional({

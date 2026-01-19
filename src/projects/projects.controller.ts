@@ -57,6 +57,24 @@ export class ProjectsController {
   }
 
   @ApiOperation({
+    summary: 'Listar projetos por profileId',
+    description: 'Retorna uma lista de projetos filtrados pelo profileId',
+  })
+  @ApiParam({
+    name: 'profileId',
+    description: 'UUID do perfil',
+    type: 'string',
+  })
+  @ApiOkResponse({
+    description: 'Projetos listados com sucesso',
+    type: [ProjetoResponseDto],
+  })
+  @Get('profile/:profileId')
+  async findByProfileId(@Param('profileId') profileId: string) {
+    return this.projectsService.GetAllProjects(profileId);
+  }
+
+  @ApiOperation({
     summary: 'Atualizar projeto',
     description: 'Atualiza os dados de um projeto existente',
   })

@@ -7,6 +7,7 @@ import {
   IsString,
   IsUrl,
   IsUUID,
+  ValidateIf,
 } from 'class-validator';
 
 export enum Plataforma {
@@ -19,10 +20,19 @@ export enum Plataforma {
   facebook = 'facebook',
   figma = 'figma',
   devto = 'devto',
+  dev = 'dev',
   email = 'email',
   behance = 'behance',
   dribbble = 'dribbble',
   medium = 'medium',
+  pinterest = 'pinterest',
+  gitlab = 'gitlab',
+  bitbucket = 'bitbucket',
+  stackoverflow = 'stackoverflow',
+  codepen = 'codepen',
+  discord = 'discord',
+  whatsapp = 'whatsapp',
+  telegram = 'telegram',
 }
 
 export class CreateSocialDto {
@@ -49,7 +59,11 @@ export class CreateSocialDto {
   })
   @IsNotEmpty({ message: 'URL e obrigatoria' })
   @IsString({ message: 'URL deve ser uma string' })
-  @IsUrl({}, { message: 'URL deve ser valida' })
+  @ValidateIf((o) => !o.url?.startsWith('mailto:'))
+  @IsUrl(
+    { require_protocol: true, protocols: ['http', 'https'] },
+    { message: 'URL deve ser valida (ex: https://exemplo.com)' },
+  )
   url: string;
 
   @ApiPropertyOptional({

@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
 
 @Injectable()
@@ -6,6 +10,7 @@ export class ProjectsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async CreateProject(data: any) {
+    // Verifica se já existe um projeto com mesmo nome APENAS para evitar duplicatas acidentais
     const projectExists = await this.prisma.projeto.findFirst({
       where: {
         profileId: data.profileId,
@@ -13,7 +18,8 @@ export class ProjectsService {
       },
     });
     if (projectExists) {
-      throw new ConflictException(`Projeto com o nome "${data.nome}" já existe neste perfil.`);
+      // Se já existe, retorna o existente ao invés de criar duplicado
+      return projectExists;
     }
     return this.prisma.projeto.create({
       data,
@@ -34,7 +40,7 @@ export class ProjectsService {
       },
     });
     if (!projectExists) {
-      throw new Error('Project not found');
+      throw new NotFoundException(`Projeto com ID "${id}" não encontrado`);
     }
     return this.prisma.projeto.update({
       where: {

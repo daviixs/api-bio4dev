@@ -12,10 +12,22 @@ export class FooterService {
       where: { profileId: data.profileId },
     });
 
+    // Se já existe, atualiza ao invés de erro
     if (existingFooter) {
-      throw new Error(
-        `Footer já existe para o profile ${data.profileId}. Use o método de atualização.`,
-      );
+      return this.prisma.footer.update({
+        where: { profileId: data.profileId },
+        data: {
+          title: data.title,
+          subtitle: data.subtitle,
+          email: data.email,
+          github: data.github,
+          linkedin: data.linkedin,
+          twitter: data.twitter,
+          copyrightName: data.copyrightName,
+          madeWith: data.madeWith,
+          resumeUrl: data.resumeUrl,
+        },
+      });
     }
 
     return this.prisma.footer.create({

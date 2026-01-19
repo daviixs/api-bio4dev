@@ -24,6 +24,8 @@ import { WorkexperinceController } from './workexperince/workexperience.controll
 import { FooterController } from './footer/footer.controller';
 import { FooterService } from './footer/footer.service';
 import { UploadController } from './footer/upload.controller';
+import { LinkButtonController } from './link-button/link-button.controller';
+import { LinkButtonService } from './link-button/link-button.service';
 
 @Module({
   imports: [PrismaModule],
@@ -40,6 +42,7 @@ import { UploadController } from './footer/upload.controller';
     WorkexperinceController,
     FooterController,
     UploadController,
+    LinkButtonController,
   ],
   providers: [
     AppService,
@@ -54,6 +57,7 @@ import { UploadController } from './footer/upload.controller';
     TechstackService,
     WorkexperienceService,
     FooterService,
+    LinkButtonService,
   ],
 })
 export class AppModule {}

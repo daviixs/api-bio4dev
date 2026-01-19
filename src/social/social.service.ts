@@ -28,10 +28,15 @@ export class SocialService {
       },
     });
 
+    // Se já existe, atualiza ao invés de erro
     if (existingSocial) {
-      throw new ConflictException(
-        'Já existe um link desta plataforma para este perfil',
-      );
+      return this.prisma.social.update({
+        where: { id: existingSocial.id },
+        data: {
+          url: data.url,
+          ordem: data.ordem ?? existingSocial.ordem,
+        },
+      });
     }
 
     return this.prisma.social.create({

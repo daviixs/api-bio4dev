@@ -11,7 +11,22 @@ import {
   Matches,
 } from 'class-validator';
 
-const templateOptions = ['template_01', 'template_02', 'template_03'] as const;
+const templateOptions = [
+  'template_01',
+  'template_02',
+  'template_03',
+  'template_04',
+  'template_05',
+  'template_06',
+  'template_07',
+  'template_08',
+  'template_09',
+  'template_10',
+  'template_11',
+  'template_12',
+  'template_13',
+  'template_14',
+] as const;
 const colorOptions = ['LIGHT', 'DARK'] as const;
 
 export enum Colors {
@@ -81,9 +96,27 @@ export class CreateProfileDto {
     enum: templateOptions,
   })
   @IsNotEmpty({ message: 'Template e obrigatorio' })
-  @IsEnum(['template_01', 'template_02', 'template_03'], {
-    message: 'Template deve ser template_01, template_02 ou template_03',
-  })
+  @IsEnum(
+    [
+      'template_01',
+      'template_02',
+      'template_03',
+      'template_04',
+      'template_05',
+      'template_06',
+      'template_07',
+      'template_08',
+      'template_09',
+      'template_10',
+      'template_11',
+      'template_12',
+      'template_13',
+      'template_14',
+    ],
+    {
+      message: 'Template deve ser entre template_01 e template_14',
+    },
+  )
   templateType: (typeof templateOptions)[number];
 
   @ApiPropertyOptional({
@@ -149,9 +182,27 @@ export class UpdateProfileDto {
     enum: templateOptions,
   })
   @IsOptional()
-  @IsEnum(['template_01', 'template_02', 'template_03'], {
-    message: 'Template deve ser template_01, template_02 ou template_03',
-  })
+  @IsEnum(
+    [
+      'template_01',
+      'template_02',
+      'template_03',
+      'template_04',
+      'template_05',
+      'template_06',
+      'template_07',
+      'template_08',
+      'template_09',
+      'template_10',
+      'template_11',
+      'template_12',
+      'template_13',
+      'template_14',
+    ],
+    {
+      message: 'Template deve ser entre template_01 e template_14',
+    },
+  )
   templateType?: (typeof templateOptions)[number];
 
   @ApiPropertyOptional({
@@ -229,4 +280,45 @@ export class ProfileResponseDto {
     example: '2025-12-11T22:00:00.000Z',
   })
   updatedAt: Date;
+}
+// DTO para duplicar portfolio
+export class DuplicateProfileDto {
+  @ApiProperty({
+    description: 'Novo slug para o portfolio duplicado',
+    example: 'meu-portfolio-novo',
+    maxLength: 60,
+  })
+  @IsNotEmpty({ message: 'newSlug e obrigatorio' })
+  @IsString({ message: 'newSlug deve ser uma string' })
+  @MaxLength(60, { message: 'newSlug deve ter no maximo 60 caracteres' })
+  newSlug: string;
+
+  @ApiPropertyOptional({
+    description: 'Se deve copiar o conteudo (projetos, paginas, social)',
+    example: true,
+    default: true,
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'copyContent deve ser um booleano' })
+  copyContent?: boolean = true;
+
+  @ApiPropertyOptional({
+    description: 'Se deve copiar as midias (imagens, avatares)',
+    example: false,
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'copyMedia deve ser um booleano' })
+  copyMedia?: boolean = false;
+}
+
+// DTO para definir portfolio ativo
+export class SetActiveProfileDto {
+  @ApiProperty({
+    description: 'UUID v4 do usuario dono do profile',
+    example: '2b6f7ad4-ef1b-4527-b8e1-5893d0ac8b3b',
+  })
+  @IsNotEmpty({ message: 'userId e obrigatorio' })
+  @IsUUID('4', { message: 'userId deve ser um UUID v4 valido' })
+  userId: string;
 }

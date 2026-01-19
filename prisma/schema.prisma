@@ -24,37 +24,46 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  profile   Profile?
+  profile   Profile[]  // Permite múltiplos profiles
 }
 
 
 // ------------------ PROFILE ------------------
 model Profile {
-  id            String        @id @default(uuid()) @db.Uuid
-  userId        String        @unique @db.Uuid
-  username      String        @unique @db.VarChar(40)
-  bio           String?       @db.Text
-  avatarUrl     String?       @db.Text
-  theme         Colors        @default(LIGHT) // Tema claro ou escuro
-  mainColor     String?       @db.VarChar(7)  // Cor principal em hexadecimal (ex: #FF5733)
-  templateType  TemplateType  // Template de bio obrigatório
-  published     Boolean       @default(false)
-  createdAt     DateTime      @default(now())
+  id                String        @id @default(uuid()) @db.Uuid
+  userId            String        @db.Uuid  // Remove @unique - permite múltiplos profiles
+  username          String        @unique @db.VarChar(40)
+  slug              String        @unique @db.VarChar(60)  // URL única
+  bio               String?       @db.Text
+  avatarUrl         String?       @db.Text
+  theme             Colors        @default(LIGHT) // Tema claro ou escuro
+  mainColor         String?       @db.VarChar(7)  // Cor principal em hexadecimal (ex: #FF5733)
+  templateType      TemplateType  // Template de bio obrigatório
+  published         Boolean       @default(false)
+  isActive          Boolean       @default(false)  // Apenas 1 ativo por user
+  templateSourceId  String?       @db.Uuid  // ID do profile usado como template
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   // Relations
-  user         User           @relation(fields: [userId], references: [id])
-  pages        Page[]
-  social       Social[]
-  legendas     Legenda[]
-  projetos     Projeto[]
-  config       Config?
-  techStack    TechStack?
-  workHistory  WorkExperience[]
-  footer       Footer?
-  templates    Template[]
-  previewTokens PreviewToken[]
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  templateSource    Profile?          @relation("TemplateSource", fields: [templateSourceId], references: [id])
+  clonedFrom        Profile[]         @relation("TemplateSource")
+  pages             Page[]
+  social            Social[]
+  legendas          Legenda[]
+  projetos          Projeto[]
+  linkButtons       LinkButton[]
+  config            Config?
+  techStack         TechStack?
+  workHistory       WorkExperience[]
+  footer            Footer?
+  templates         Template[]
+  previewTokens     PreviewToken[]
 
   @@index([userId])
+  @@index([slug])
+  @@index([userId, isActive])
 }
 
 
@@ -82,7 +91,7 @@ model Page {
   ordem     Int?
   createdAt DateTime  @default(now())
 
-  profile   Profile   @relation(fields: [profileId], references: [id])
+  profile   Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
   custom    Custom[]
   templates TemplatePage[]
 
@@ -101,7 +110,7 @@ model Custom {
   ativo     Boolean   @default(true)
   createdAt DateTime  @default(now())
 
-  page      Page      @relation(fields: [pageId], references: [id])
+  page      Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
   @@index([pageId])
 }
@@ -126,7 +135,7 @@ model Social {
   url         String      @db.Text
   ordem       Int
 
-  profile     Profile     @relation(fields: [profileId], references: [id])
+  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
   templates   TemplateSocial[]
 
   @@index([profileId])
@@ -142,10 +151,19 @@ enum Plataforma {
   facebook
   figma
   devto
+  dev
   email
   behance
   dribbble
   medium
+  pinterest
+  gitlab
+  bitbucket
+  stackoverflow
+  codepen
+  discord
+  whatsapp
+  telegram
 }
 
 
@@ -161,7 +179,7 @@ model Legenda {
   descricao   String    @db.Text
   createdAt   DateTime  @default(now())
 
-  profile     Profile   @relation(fields: [profileId], references: [id])
+  profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
   templates   Template[]
 
   @@index([profileId])
@@ -177,12 +195,32 @@ model Projeto {
   demoLink  String?   @db.Text
   codeLink  String?   @db.Text
   ordem     Int       @default(0)
-  gif       String
+  gif       String?   @db.Text
   tags      String[]  @default([])
   createdAt DateTime  @default(now())
 
-  profile   Profile   @relation(fields: [profileId], references: [id])
+  profile   Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
   templates Template[]
+
+  @@index([profileId])
+}
+
+
+// ------------------ LINK BUTTON (para influenciadores) ------------------
+model LinkButton {
+  id        String    @id @default(uuid()) @db.Uuid
+  profileId String    @db.Uuid
+  label     String    @db.VarChar(100)
+  url       String    @db.Text
+  subtext   String?   @db.VarChar(200)
+  icon      String?   @db.VarChar(50)
+  style     String?   @db.VarChar(100)
+  ordem     Int       @default(0)
+  ativo     Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  profile   Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@index([profileId])
 }
@@ -196,7 +234,7 @@ model Config {
   projetos  Int
   createdAt DateTime  @default(now())
 
-  profile   Profile   @relation(fields: [profileId], references: [id])
+  profile   Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
   templates Template[]
 
   @@index([profileId])
@@ -213,10 +251,10 @@ model Template {
   createdAt DateTime  @default(now())
 
   // Relations
-  profile   Profile  @relation(fields: [profileId], references: [id])
-  legenda   Legenda  @relation(fields: [legendaId], references: [id])
-  projeto   Projeto  @relation(fields: [projetoId], references: [id])
-  config    Config   @relation(fields: [configId], references: [id])
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  legenda   Legenda  @relation(fields: [legendaId], references: [id], onDelete: Cascade)
+  projeto   Projeto  @relation(fields: [projetoId], references: [id], onDelete: Cascade)
+  config    Config   @relation(fields: [configId], references: [id], onDelete: Cascade)
 
   social    TemplateSocial[]
   pages     TemplatePage[]
@@ -234,8 +272,8 @@ model TemplateSocial {
   templateId String    @db.Uuid
   socialId   String    @db.Uuid
   
-  template   Template  @relation(fields: [templateId], references: [id])
-  social     Social    @relation(fields: [socialId], references: [id])
+  template   Template  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  social     Social    @relation(fields: [socialId], references: [id], onDelete: Cascade)
 
   @@unique([templateId, socialId])
   @@index([templateId])
@@ -249,8 +287,8 @@ model TemplatePage {
   templateId String    @db.Uuid
   pageId     String    @db.Uuid
   
-  template   Template  @relation(fields: [templateId], references: [id])
-  page       Page      @relation(fields: [pageId], references: [id])
+  template   Template  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  page       Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
   @@unique([templateId, pageId])
   @@index([templateId])
@@ -265,9 +303,20 @@ enum Colors {
 }
 
 enum TemplateType {
-  template_01
-  template_02
-  template_03
+  template_01  // Dev/Tech
+  template_02  // Design/Creative
+  template_03  // Business/Corporate
+  template_04  // Fitness Influencer
+  template_05  // Musician/Artist
+  template_06  // Photographer
+  template_07  // Coach/Mentor
+  template_08  // Food Blogger
+  template_09  // Travel Influencer
+  template_10  // Fashion Influencer
+  template_11  // Gaming Streamer
+  template_12  // Gourmet
+  template_13  // Innovation
+  template_14  // Streamer
 }
 
 
@@ -278,7 +327,7 @@ model TechStack {
   title        String       @db.VarChar(100)
   subtitle     String       @db.VarChar(200)
   
-  profile      Profile      @relation(fields: [profileId], references: [id])
+  profile      Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
   technologies Technology[]
 
   @@index([profileId])
@@ -292,7 +341,7 @@ model Technology {
   color       String    @db.VarChar(20) 
   ordem       Int       @default(0)
 
-  techStack   TechStack @relation(fields: [techStackId], references: [id])
+  techStack   TechStack @relation(fields: [techStackId], references: [id], onDelete: Cascade)
 
   @@index([techStackId])
 }
@@ -308,7 +357,7 @@ model WorkExperience {
   impact           String?              @db.Text
   ordem            Int                  @default(0)
 
-  profile          Profile              @relation(fields: [profileId], references: [id])
+  profile          Profile              @relation(fields: [profileId], references: [id], onDelete: Cascade)
   technologies     WorkTechnology[]
   responsibilities WorkResponsibility[]
 
@@ -320,7 +369,7 @@ model WorkTechnology {
   workExperienceId String         @db.Uuid
   technology       String         @db.VarChar(50)
 
-  workExperience   WorkExperience @relation(fields: [workExperienceId], references: [id])
+  workExperience   WorkExperience @relation(fields: [workExperienceId], references: [id], onDelete: Cascade)
 
   @@index([workExperienceId])
 }
@@ -331,7 +380,7 @@ model WorkResponsibility {
   responsibility   String         @db.Text
   ordem            Int            @default(0)
 
-  workExperience   WorkExperience @relation(fields: [workExperienceId], references: [id])
+  workExperience   WorkExperience @relation(fields: [workExperienceId], references: [id], onDelete: Cascade)
 
   @@index([workExperienceId])
 }
@@ -351,7 +400,7 @@ model Footer {
   madeWith      String?   @db.Text
   resumeUrl     String?   @db.Text
 
-  profile       Profile   @relation(fields: [profileId], references: [id])
+  profile       Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@index([profileId])
 }
