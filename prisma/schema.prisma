@@ -149,6 +149,15 @@ enum Plataforma {
   linkedin
   twitter
   facebook
+  x
+  threads
+  website
+  spotify
+  soundcloud
+  snapchat
+  patreon
+  twitch
+  applemusic
   figma
   devto
   dev
