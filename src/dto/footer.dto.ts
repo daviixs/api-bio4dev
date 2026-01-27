@@ -47,8 +47,7 @@ export class CreateFooterDto {
     example: 'https://github.com/usuario',
   })
   @IsOptional()
-  @ValidateIf((o) => o.github !== '' && o.github !== null && o.github !== undefined)
-  @IsUrl({}, { message: 'Github deve ser uma URL valida' })
+  @IsString({ message: 'Github deve ser uma string' })
   github?: string;
 
   @ApiPropertyOptional({
@@ -56,8 +55,7 @@ export class CreateFooterDto {
     example: 'https://linkedin.com/in/usuario',
   })
   @IsOptional()
-  @ValidateIf((o) => o.linkedin !== '' && o.linkedin !== null && o.linkedin !== undefined)
-  @IsUrl({}, { message: 'Linkedin deve ser uma URL valida' })
+  @IsString({ message: 'Linkedin deve ser uma string' })
   linkedin?: string;
 
   @ApiPropertyOptional({
@@ -65,8 +63,7 @@ export class CreateFooterDto {
     example: 'https://twitter.com/usuario',
   })
   @IsOptional()
-  @ValidateIf((o) => o.twitter !== '' && o.twitter !== null && o.twitter !== undefined)
-  @IsUrl({}, { message: 'Twitter deve ser uma URL valida' })
+  @IsString({ message: 'Twitter deve ser uma string' })
   twitter?: string;
 
   @ApiProperty({
@@ -124,7 +121,9 @@ export class UpdateFooterDto {
     example: 'https://github.com/novo-usuario',
   })
   @IsOptional()
-  @ValidateIf((o) => o.github !== '' && o.github !== null && o.github !== undefined)
+  @ValidateIf(
+    (o) => o.github !== '' && o.github !== null && o.github !== undefined,
+  )
   @IsUrl({}, { message: 'Github deve ser uma URL valida' })
   github?: string;
 
@@ -133,7 +132,9 @@ export class UpdateFooterDto {
     example: 'https://linkedin.com/in/novo-usuario',
   })
   @IsOptional()
-  @ValidateIf((o) => o.linkedin !== '' && o.linkedin !== null && o.linkedin !== undefined)
+  @ValidateIf(
+    (o) => o.linkedin !== '' && o.linkedin !== null && o.linkedin !== undefined,
+  )
   @IsUrl({}, { message: 'Linkedin deve ser uma URL valida' })
   linkedin?: string;
 
@@ -142,7 +143,9 @@ export class UpdateFooterDto {
     example: 'https://twitter.com/novo-usuario',
   })
   @IsOptional()
-  @ValidateIf((o) => o.twitter !== '' && o.twitter !== null && o.twitter !== undefined)
+  @ValidateIf(
+    (o) => o.twitter !== '' && o.twitter !== null && o.twitter !== undefined,
+  )
   @IsUrl({}, { message: 'Twitter deve ser uma URL valida' })
   twitter?: string;
 

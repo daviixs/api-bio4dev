@@ -41,9 +41,7 @@ export class CreateProjetoDto {
     example: 'https://site.com/demo.gif',
   })
   @IsOptional()
-  @ValidateIf((o) => o.gif !== '' && o.gif !== null && o.gif !== undefined)
   @IsString({ message: 'Gif deve ser uma string' })
-  @IsUrl({}, { message: 'Gif deve ser uma URL valida' })
   gif?: string;
 
   @ApiPropertyOptional({
@@ -51,11 +49,7 @@ export class CreateProjetoDto {
     example: 'https://meu-projeto.com',
   })
   @IsOptional()
-  @ValidateIf(
-    (o) => o.demoLink !== '' && o.demoLink !== null && o.demoLink !== undefined,
-  )
   @IsString({ message: 'Demo link deve ser uma string' })
-  @IsUrl({}, { message: 'Demo link deve ser uma URL valida' })
   demoLink?: string;
 
   @ApiPropertyOptional({
@@ -63,11 +57,7 @@ export class CreateProjetoDto {
     example: 'https://github.com/usuario/repo',
   })
   @IsOptional()
-  @ValidateIf(
-    (o) => o.codeLink !== '' && o.codeLink !== null && o.codeLink !== undefined,
-  )
   @IsString({ message: 'Code link deve ser uma string' })
-  @IsUrl({}, { message: 'Code link deve ser uma URL valida' })
   codeLink?: string;
 
   @ApiPropertyOptional({
@@ -86,6 +76,7 @@ export class CreateProjetoDto {
     type: [String],
   })
   @IsOptional()
+  @IsArray({ message: 'Tags deve ser um array' })
   @IsString({ each: true, message: 'Cada tag deve ser uma string' })
   tags?: string[];
 }
