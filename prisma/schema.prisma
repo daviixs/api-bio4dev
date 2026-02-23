@@ -23,10 +23,20 @@ model User {
   nome      String    @db.VarChar(120)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  role Role @default(CLIENT)
 
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+
+  @@map("user")
   profile   Profile[]  // Permite múltiplos profiles
 }
 
+enum Role {
+  CLIENT
+  ADMIN
+  ROOT
+}
 
 // ------------------ PROFILE ------------------
 model Profile {
