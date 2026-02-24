@@ -1,38 +1,45 @@
-import { Body, Controller, Post } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiCreatedResponse,
+  Body,
+  Controller,
+  Get,
+  Put,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
-  ApiOkResponse,
 } from '@nestjs/swagger';
-import { UserDto, LoginDto } from 'src/dto/users.dto';
 import { UsersService } from './users.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UpdatePasswordDto, UserResponseDto } from '../dto/users.dto';
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @ApiOperation({
-    summary: 'Criar usuario',
-    description: 'Cria um novo usuario com email, senha e nome',
-  })
-  @ApiBody({ type: UserDto })
-  @ApiCreatedResponse({ description: 'Usuario criado com sucesso' })
-  @Post('register')
-  async create(@Body() data: UserDto) {
-    return this.usersService.create(data);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Dados do usuário autenticado' })
+  @ApiOkResponse({ type: UserResponseDto })
+  @Get('me')
+  public async me(@Request() req): Promise<UserResponseDto> {
+    // req.user vem do JwtStrategy.validate
+    return req.user;
   }
 
-  @ApiOperation({
-    summary: 'Login de usuario',
-    description: 'Autentica um usuario com email e senha',
-  })
-  @ApiBody({ type: LoginDto })
-  @ApiOkResponse({ description: 'Login realizado com sucesso' })
-  @Post('login')
-  async login(@Body() data: LoginDto) {
-    return this.usersService.login(data);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Atualizar senha do usuário autenticado' })
+  @ApiOkResponse({ description: 'Senha atualizada com sucesso' })
+  @Put('password')
+  public async updatePassword(
+    @Request() req,
+    @Body() updatePasswordDto: UpdatePasswordDto,
+  ) {
+    return this.usersService.updatePassword(updatePasswordDto, req.user.id);
   }
 }

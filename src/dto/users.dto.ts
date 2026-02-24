@@ -1,15 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
+  IsEnum,
   IsNotEmpty,
+  IsOptional,
   IsString,
   MaxLength,
   MinLength,
-  IsOptional,
-  IsUUID,
 } from 'class-validator';
 
-export class UserDto {
+export enum UserRole {
+  USER = 'USER',
+  PLATFORM_ADMIN = 'PLATFORM_ADMIN',
+}
+
+export class CreateUserDto {
   @ApiProperty({
     description: 'Email do usuario',
     example: 'usuario@empresa.com',
@@ -39,6 +44,15 @@ export class UserDto {
   @IsString({ message: 'Nome deve ser uma string' })
   @MaxLength(120, { message: 'Nome deve ter no maximo 120 caracteres' })
   nome: string;
+
+  @ApiPropertyOptional({
+    description: 'Papel do usuario (fixo em USER na criacao)',
+    enum: UserRole,
+    default: UserRole.USER,
+  })
+  @IsOptional()
+  @IsEnum(UserRole, { message: 'Role deve ser USER ou PLATFORM_ADMIN' })
+  role?: UserRole;
 }
 
 export class UpdateUserDto {
@@ -71,6 +85,15 @@ export class UpdateUserDto {
   @IsString({ message: 'Nome deve ser uma string' })
   @MaxLength(120, { message: 'Nome deve ter no maximo 120 caracteres' })
   nome?: string;
+
+  @ApiPropertyOptional({
+    description: 'Papel do usuario',
+    enum: UserRole,
+    example: UserRole.PLATFORM_ADMIN,
+  })
+  @IsOptional()
+  @IsEnum(UserRole, { message: 'Role deve ser USER ou PLATFORM_ADMIN' })
+  role?: UserRole;
 }
 
 export class LoginDto {
@@ -91,6 +114,26 @@ export class LoginDto {
   senha: string;
 }
 
+export class UpdatePasswordDto {
+  @ApiProperty({
+    description: 'Senha atual do usuario',
+    example: 's3nh@Antiga',
+  })
+  @IsNotEmpty({ message: 'Senha atual e obrigatoria' })
+  @IsString({ message: 'Senha atual deve ser uma string' })
+  senhaAtual: string;
+
+  @ApiProperty({
+    description: 'Nova senha do usuario',
+    example: 'N0v@S3nh@Segura',
+    minLength: 6,
+  })
+  @IsNotEmpty({ message: 'Nova senha e obrigatoria' })
+  @IsString({ message: 'Nova senha deve ser uma string' })
+  @MinLength(6, { message: 'Nova senha deve ter no minimo 6 caracteres' })
+  novaSenha: string;
+}
+
 export class UserResponseDto {
   @ApiProperty({
     description: 'UUID v4 do usuario',
@@ -109,6 +152,13 @@ export class UserResponseDto {
     example: 'Usuario Teste',
   })
   nome: string;
+
+  @ApiProperty({
+    description: 'Papel do usuario',
+    enum: UserRole,
+    example: UserRole.USER,
+  })
+  role: UserRole;
 
   @ApiProperty({
     description: 'Data de criacao',

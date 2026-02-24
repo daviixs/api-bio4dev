@@ -26,9 +26,11 @@ import { FooterService } from './footer/footer.service';
 import { UploadController } from './footer/upload.controller';
 import { LinkButtonController } from './link-button/link-button.controller';
 import { LinkButtonService } from './link-button/link-button.service';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AuthModule, UsersModule],
   controllers: [
     AppController,
     UsersController,
