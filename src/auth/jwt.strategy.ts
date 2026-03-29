@@ -7,13 +7,15 @@ import { UserRole } from '../dto/users.dto';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly authService: AuthService) {
-    if (!process.env.SECRETKEY) {
-      throw new Error('SECRETKEY não configurada no ambiente');
+    // Accept both legacy SECRETKEY and standard JWT_SECRET for flexibility
+    const secret = process.env.JWT_SECRET || process.env.SECRETKEY;
+    if (!secret) {
+      throw new Error('JWT_SECRET (ou SECRETKEY) não configurada no ambiente');
     }
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.SECRETKEY,
+      secretOrKey: secret,
     });
   }
 

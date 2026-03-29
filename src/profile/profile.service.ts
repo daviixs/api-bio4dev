@@ -17,6 +17,16 @@ import {
 export class ProfileService {
   constructor(private prisma: PrismaService) {}
 
+  private normalizeSlug(input: string) {
+    return input
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .replace(/-{2,}/g, '-');
+  }
+
   async findAll() {
     return this.prisma.profile.findMany({
       select: {
@@ -63,13 +73,22 @@ export class ProfileService {
       );
     }
 
-    // ✅ GERAR SLUG único (username => url-safe; adicionar sufixo se colidir)
-    let slug = data.username.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-    let counter = 1;
+    // ✅ Definir/validar slug
+    const desiredSlug = data.slug ?? data.username;
+    const slug = this.normalizeSlug(desiredSlug);
 
-    while (await this.prisma.profile.findUnique({ where: { slug } })) {
-      slug = `${data.username.toLowerCase().replace(/[^a-z0-9-]/g, '-')}-${counter}`;
-      counter++;
+    if (!slug || !/^[a-z0-9-]{3,60}$/.test(slug)) {
+      throw new BadRequestException(
+        'Slug inválido: use 3-60 caracteres, letras minúsculas, números e hífens',
+      );
+    }
+
+    const existingSlug = await this.prisma.profile.findUnique({
+      where: { slug },
+    });
+
+    if (existingSlug) {
+      throw new BadRequestException(`Slug \"${slug}\" já está em uso`);
     }
 
     // ✅ PRIMEIRO profile => isActive=true; demais => isActive=false
@@ -85,7 +104,7 @@ export class ProfileService {
         theme: data.theme ?? 'LIGHT',
         mainColor: data.mainColor,
         templateType: data.templateType,
-        published: data.published ?? false,
+        published: data.published ?? true,
         isActive,
       },
     });
@@ -105,6 +124,27 @@ export class ProfileService {
   }
 
   async updateProfile(id: string, data: UpdateProfileDto) {
+    let slug: string | undefined;
+
+    if (data.slug !== undefined) {
+      const normalized = this.normalizeSlug(data.slug);
+      if (!normalized || !/^[a-z0-9-]{3,60}$/.test(normalized)) {
+        throw new BadRequestException(
+          'Slug inválido: use 3-60 caracteres, letras minúsculas, números e hífens',
+        );
+      }
+
+      const conflict = await this.prisma.profile.findFirst({
+        where: { slug: normalized, NOT: { id } },
+      });
+
+      if (conflict) {
+        throw new BadRequestException(`Slug \"${normalized}\" já está em uso`);
+      }
+
+      slug = normalized;
+    }
+
     return this.prisma.profile.update({
       where: { id },
       data: {
@@ -115,6 +155,7 @@ export class ProfileService {
         mainColor: data.mainColor,
         templateType: data.templateType,
         published: data.published,
+        ...(slug ? { slug } : {}),
       },
     });
   }

@@ -1,8 +1,6 @@
 // ------------------ GENERATOR & DATASOURCE ------------------
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
-  moduleFormat = "cjs"
+  provider = "prisma-client-js"
 }
 
 generator erd {
@@ -24,9 +22,6 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   role Role @default(CLIENT)
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @default(now()) @updatedAt
 
   @@map("user")
   profile   Profile[]  // Permite múltiplos profiles
