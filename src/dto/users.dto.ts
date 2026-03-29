@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
   IsEnum,
+  IsBoolean,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -53,6 +54,16 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(UserRole, { message: 'Role deve ser USER ou PLATFORM_ADMIN' })
   role?: UserRole;
+
+  @ApiPropertyOptional({
+    description: 'Username do usuario',
+    example: 'john_doe',
+    maxLength: 60,
+  })
+  @IsOptional()
+  @IsString({ message: 'Username deve ser uma string' })
+  @MaxLength(60, { message: 'Username deve ter no maximo 60 caracteres' })
+  username?: string;
 }
 
 export class UpdateUserDto {
@@ -121,7 +132,7 @@ export class UpdatePasswordDto {
   })
   @IsNotEmpty({ message: 'Senha atual e obrigatoria' })
   @IsString({ message: 'Senha atual deve ser uma string' })
-  senhaAtual: string;
+  oldPassword: string;
 
   @ApiProperty({
     description: 'Nova senha do usuario',
@@ -131,7 +142,7 @@ export class UpdatePasswordDto {
   @IsNotEmpty({ message: 'Nova senha e obrigatoria' })
   @IsString({ message: 'Nova senha deve ser uma string' })
   @MinLength(6, { message: 'Nova senha deve ter no minimo 6 caracteres' })
-  novaSenha: string;
+  newPassword: string;
 }
 
 export class UserResponseDto {
@@ -153,6 +164,27 @@ export class UserResponseDto {
   })
   nome: string;
 
+  @ApiPropertyOptional({ description: 'Username do usuario', example: 'john_doe' })
+  username?: string;
+
+  @ApiPropertyOptional({ description: 'Preferência de email notifications', example: true })
+  emailNotifications?: boolean;
+
+  @ApiPropertyOptional({ description: 'Preferência de marketing emails', example: false })
+  marketingEmails?: boolean;
+
+  @ApiPropertyOptional({ description: 'Preferência de alertas de segurança', example: true })
+  securityAlerts?: boolean;
+
+  @ApiPropertyOptional({ description: 'Idioma preferido', example: 'en' })
+  language?: string;
+
+  @ApiPropertyOptional({ description: 'Timezone preferido', example: 'UTC' })
+  timezone?: string;
+
+  @ApiPropertyOptional({ description: '2FA habilitado', example: false })
+  twoFactorEnabled?: boolean;
+
   @ApiProperty({
     description: 'Papel do usuario',
     enum: UserRole,
@@ -171,4 +203,31 @@ export class UserResponseDto {
     example: '2025-12-11T22:00:00.000Z',
   })
   updatedAt: Date;
+}
+
+export class UpdatePreferencesDto {
+  @ApiPropertyOptional({ description: 'Receber notificações por email', example: true })
+  @IsOptional()
+  @IsBoolean({ message: 'emailNotifications deve ser booleano' })
+  emailNotifications?: boolean;
+
+  @ApiPropertyOptional({ description: 'Receber emails de marketing', example: false })
+  @IsOptional()
+  @IsBoolean({ message: 'marketingEmails deve ser booleano' })
+  marketingEmails?: boolean;
+
+  @ApiPropertyOptional({ description: 'Alertas de segurança', example: true })
+  @IsOptional()
+  @IsBoolean({ message: 'securityAlerts deve ser booleano' })
+  securityAlerts?: boolean;
+
+  @ApiPropertyOptional({ description: 'Idioma preferido', example: 'en' })
+  @IsOptional()
+  @IsString()
+  language?: string;
+
+  @ApiPropertyOptional({ description: 'Timezone preferido', example: 'UTC' })
+  @IsOptional()
+  @IsString()
+  timezone?: string;
 }

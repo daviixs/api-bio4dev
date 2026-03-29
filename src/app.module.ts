@@ -28,9 +28,10 @@ import { LinkButtonController } from './link-button/link-button.controller';
 import { LinkButtonService } from './link-button/link-button.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, UsersModule],
+  imports: [PrismaModule, AuthModule, UsersModule, AnalyticsModule],
   controllers: [
     AppController,
     UsersController,
