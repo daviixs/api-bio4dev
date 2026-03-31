@@ -105,6 +105,16 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEnum(UserRole, { message: 'Role deve ser USER ou PLATFORM_ADMIN' })
   role?: UserRole;
+
+  @ApiPropertyOptional({
+    description: 'Username do usuario',
+    example: 'john_doe',
+    maxLength: 60,
+  })
+  @IsOptional()
+  @IsString({ message: 'Username deve ser uma string' })
+  @MaxLength(60, { message: 'Username deve ter no maximo 60 caracteres' })
+  username?: string;
 }
 
 export class LoginDto {

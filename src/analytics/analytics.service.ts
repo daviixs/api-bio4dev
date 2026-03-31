@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 
-interface OverviewResult {
+export interface OverviewResult {
   totalVisits: number;
   uniqueVisitors: number | null;
   avgSessionDurationMs: number;
@@ -9,19 +9,19 @@ interface OverviewResult {
   growthPct: number | null;
 }
 
-interface TimeseriesPoint {
+export interface TimeseriesPoint {
   label: string;
   visits: number;
   unique: number;
 }
 
-interface TopPage {
+export interface TopPage {
   path: string;
   visits: number;
   trendPct: number | null;
 }
 
-interface DeviceBreakdown {
+export interface DeviceBreakdown {
   device: string;
   value: number;
 }

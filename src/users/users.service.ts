@@ -14,6 +14,7 @@ import {
   UpdateUserDto,
   UpdatePreferencesDto,
 } from '../dto/users.dto';
+import { Role } from '@prisma/client';
 import { hash, compare } from 'bcrypt';
 
 @Injectable()
@@ -100,14 +101,18 @@ export class UsersService {
   }
 
   async updateUser(id: string, dto: UpdateUserDto) {
+    const data: any = {
+      email: dto.email,
+      nome: dto.nome,
+      username: dto.username,
+    };
+
+    const prismaRole = this.toPrismaRole(dto.role);
+    if (prismaRole) data.role = prismaRole;
+
     const user = await this.prisma.user.update({
       where: { id },
-      data: {
-        email: dto.email,
-        nome: dto.nome,
-        role: dto.role,
-        username: dto.username,
-      },
+      data,
     });
     return { message: 'Usuário atualizado com sucesso', user: this.toResponse(user) };
   }
@@ -155,9 +160,32 @@ export class UsersService {
       language: user.language,
       timezone: user.timezone,
       twoFactorEnabled: user.twoFactorEnabled,
-      role: user.role ?? UserRole.USER,
+      role: this.toApiRole(user.role),
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
+  }
+
+  private toPrismaRole(role?: UserRole): Role | undefined {
+    if (!role) return undefined;
+    switch (role) {
+      case UserRole.USER:
+        return Role.CLIENT;
+      case UserRole.PLATFORM_ADMIN:
+        return Role.ADMIN;
+      default:
+        return undefined;
+    }
+  }
+
+  private toApiRole(role?: Role | null): UserRole {
+    switch (role) {
+      case Role.ADMIN:
+      case Role.ROOT:
+        return UserRole.PLATFORM_ADMIN;
+      case Role.CLIENT:
+      default:
+        return UserRole.USER;
+    }
   }
 }
