@@ -1,11 +1,12 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  BadRequestException,
+} from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
-import {
-  CreateUserDto,
-  LoginDto,
-  UserResponseDto,
-} from '../dto/users.dto';
+import { UserResponseDto } from '../dto/users.dto';
 import { JwtPayload } from './jwt.strategy';
 
 @Injectable()
@@ -15,34 +16,24 @@ export class AuthService {
     private readonly usersService: UsersService,
   ) {}
 
-  async register(userDto: CreateUserDto): Promise<RegistrationStatus> {
-    let status: RegistrationStatus = {
-      success: true,
-      message: 'ACCOUNT_CREATE_SUCCESS',
-    };
-
-    try {
-      const created = await this.usersService.create(userDto);
-      status.user = created.user;
-    } catch (err) {
-      status = {
-        success: false,
-        message: err?.message ?? 'ACCOUNT_CREATE_ERROR',
-      };
-    }
-    return status;
+  /**
+   * @deprecated Email/password registration is no longer supported.
+   * Use Google OAuth instead via /auth/google
+   */
+  async register(): Promise<never> {
+    throw new BadRequestException(
+      'Email/password registration is no longer supported. Please use Google Sign-In.',
+    );
   }
 
-  async login(loginUserDto: LoginDto): Promise<AuthResponse> {
-    const userEntity = await this.usersService.findByLogin(loginUserDto);
-    const user = this.usersService.toResponse(userEntity);
-
-    const token = this._createToken(user);
-
-    return {
-      ...token,
-      user,
-    };
+  /**
+   * @deprecated Email/password login is no longer supported.
+   * Use Google OAuth instead via /auth/google
+   */
+  async login(): Promise<never> {
+    throw new BadRequestException(
+      'Email/password login is no longer supported. Please use Google Sign-In.',
+    );
   }
 
   private _createToken(user: UserResponseDto): AuthToken {

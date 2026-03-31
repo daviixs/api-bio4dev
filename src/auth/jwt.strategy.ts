@@ -1,35 +1,96 @@
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AuthService } from './auth.service';
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  OnModuleInit,
+} from '@nestjs/common';
 import { UserRole } from '../dto/users.dto';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
+export class JwtStrategy
+  extends PassportStrategy(Strategy)
+  implements OnModuleInit
+{
+  private static publicKey: string;
+
   constructor(private readonly authService: AuthService) {
-    // Accept both legacy SECRETKEY and standard JWT_SECRET for flexibility
-    const secret = process.env.JWT_SECRET || process.env.SECRETKEY;
-    if (!secret) {
-      throw new Error('JWT_SECRET (ou SECRETKEY) não configurada no ambiente');
-    }
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: secret,
+      algorithms: ['RS256'],
+      secretOrKeyProvider: async (
+        _request: any,
+        _rawJwtToken: string,
+        done: (err: Error | null, key?: string) => void,
+      ) => {
+        try {
+          if (!JwtStrategy.publicKey) {
+            const publicKeyPath =
+              process.env.JWT_PUBLIC_KEY || './keys/public.pem';
+            const resolvedPath = publicKeyPath.startsWith('./')
+              ? join(process.cwd(), publicKeyPath)
+              : publicKeyPath;
+            JwtStrategy.publicKey = await readFile(resolvedPath, 'utf-8');
+          }
+          done(null, JwtStrategy.publicKey);
+        } catch (error) {
+          done(error as Error);
+        }
+      },
     });
   }
 
-  async validate(payload: JwtPayload): Promise<any> {
-    const user = await this.authService.validateUser(payload);
-    if (!user) {
-      throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
+  async onModuleInit() {
+    // Pre-load the public key
+    try {
+      const publicKeyPath = process.env.JWT_PUBLIC_KEY || './keys/public.pem';
+      const resolvedPath = publicKeyPath.startsWith('./')
+        ? join(process.cwd(), publicKeyPath)
+        : publicKeyPath;
+      JwtStrategy.publicKey = await readFile(resolvedPath, 'utf-8');
+      console.log('JWT Strategy: Public key loaded successfully');
+    } catch (error) {
+      console.error('JWT Strategy: Failed to load public key:', error);
     }
-    return user;
+  }
+
+  async validate(payload: JwtPayload): Promise<any> {
+    // For Google OAuth, we validate the token claims directly
+    if (!payload.sub) {
+      throw new HttpException('Invalid token payload', HttpStatus.UNAUTHORIZED);
+    }
+
+    // If email is present, validate user exists
+    if (payload.email) {
+      const user = await this.authService.validateUser(payload);
+      if (!user) {
+        throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
+      }
+      return user;
+    }
+
+    // Return basic user info from token
+    return {
+      userId: payload.sub,
+      email: payload.email,
+      role: payload.role,
+      jti: payload.jti,
+    };
   }
 }
 
 export interface JwtPayload {
   sub: string;
-  email: string;
-  role: UserRole;
+  email?: string;
+  role?: UserRole;
+  jti?: string;
+  iat?: number;
+  exp?: number;
+  iss?: string;
+  aud?: string;
 }

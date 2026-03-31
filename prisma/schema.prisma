@@ -17,21 +17,48 @@ datasource db {
 model User {
   id        String    @id @default(uuid()) @db.Uuid
   email     String    @unique @db.VarChar(180)
-  senha     String    @db.Text
   nome      String    @db.VarChar(120)
   username  String?   @unique @db.VarChar(60)
+  
+  // Google OAuth fields
+  googleId  String?   @unique @db.VarChar(255)
+  avatar    String?   @db.Text
+  
+  // JWT token tracking
+  jti           String?  @unique @db.VarChar(255)
+  tokenVersion  Int      @default(0)
+  
+  // User preferences
   emailNotifications Boolean @default(true)
   marketingEmails    Boolean @default(false)
   securityAlerts     Boolean @default(true)
   language           String? @db.VarChar(10)
   timezone           String? @db.VarChar(60)
   twoFactorEnabled   Boolean @default(false)
+  
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   role Role @default(CLIENT)
 
   @@map("user")
-  profile   Profile[]  // Permite múltiplos profiles
+  profile       Profile[]       // Permite múltiplos profiles
+  refreshTokens RefreshToken[]  // Refresh tokens for JWT rotation
+}
+
+// ------------------ REFRESH TOKEN ------------------
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique @db.Text
+  jti       String    @unique @db.VarChar(255)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  @@index([userId])
+  @@index([jti])
+  @@map("refresh_token")
 }
 
 enum Role {

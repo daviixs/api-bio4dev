@@ -8,6 +8,7 @@ import {
   Param,
   Request,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -18,7 +19,6 @@ import {
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
-  UpdatePasswordDto,
   UserResponseDto,
   UpdateUserDto,
   UpdatePreferencesDto,
@@ -46,16 +46,19 @@ export class UsersController {
     return this.usersService.findById(id);
   }
 
+  /**
+   * @deprecated Password management is no longer supported with Google OAuth.
+   */
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Atualizar senha do usuário autenticado' })
-  @ApiOkResponse({ description: 'Senha atualizada com sucesso' })
+  @ApiOperation({
+    summary: 'Deprecated - Password management not available with Google OAuth',
+  })
   @Put('password')
-  public async updatePassword(
-    @Request() req: any,
-    @Body() updatePasswordDto: UpdatePasswordDto,
-  ) {
-    return this.usersService.updatePassword(updatePasswordDto, req.user.id);
+  public async updatePassword() {
+    throw new BadRequestException(
+      'Password management is not available with Google OAuth authentication.',
+    );
   }
 
   @UseGuards(JwtAuthGuard)
@@ -75,14 +78,19 @@ export class UsersController {
     return this.usersService.updatePreferences(id, dto);
   }
 
+  /**
+   * @deprecated Password management is no longer supported with Google OAuth.
+   */
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Deprecated - Password management not available with Google OAuth',
+  })
   @Patch(':id/password')
-  public async updatePasswordById(
-    @Param('id') id: string,
-    @Body() dto: UpdatePasswordDto,
-  ) {
-    return this.usersService.updatePassword(dto, id);
+  public async updatePasswordById() {
+    throw new BadRequestException(
+      'Password management is not available with Google OAuth authentication.',
+    );
   }
 
   @UseGuards(JwtAuthGuard)

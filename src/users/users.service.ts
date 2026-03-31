@@ -3,74 +3,49 @@ import {
   UnauthorizedException,
   ConflictException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import {
-  CreateUserDto,
-  LoginDto,
-  UpdatePasswordDto,
   UserRole,
   UserResponseDto,
   UpdateUserDto,
   UpdatePreferencesDto,
 } from '../dto/users.dto';
 import { Role } from '@prisma/client';
-import { hash, compare } from 'bcrypt';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: CreateUserDto) {
-    // Verificar se o email já existe
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: data.email },
-    });
-
-    if (existingUser) {
-      throw new ConflictException('Email já está em uso');
-    }
-
-    const senhaHash = await hash(data.senha, 10);
-
-    const user = await this.prisma.user.create({
-      data: {
-        email: data.email,
-        senha: senhaHash,
-        nome: data.nome,
-        // role ainda não existe no schema; quando existir, remover fallback
-      },
-    });
-
-    return {
-      message: 'Usuário criado com sucesso!',
-      user: this.toResponse(user),
-    };
+  /**
+   * @deprecated Email/password registration is no longer supported.
+   * Use Google OAuth instead via /auth/google
+   */
+  async create(): Promise<never> {
+    throw new BadRequestException(
+      'Email/password registration is no longer supported. Please use Google Sign-In.',
+    );
   }
 
-  async login(data: LoginDto) {
-    const user = await this.findByLogin(data);
-    return {
-      message: 'Login realizado com sucesso!',
-      user: this.toResponse(user),
-    };
+  /**
+   * @deprecated Email/password login is no longer supported.
+   * Use Google OAuth instead via /auth/google
+   */
+  async login(): Promise<never> {
+    throw new BadRequestException(
+      'Email/password login is no longer supported. Please use Google Sign-In.',
+    );
   }
 
-  async findByLogin({ email, senha }: LoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('Email ou senha incorretos');
-    }
-
-    const senhaConfere = await compare(senha, user.senha);
-    if (!senhaConfere) {
-      throw new UnauthorizedException('Email ou senha incorretos');
-    }
-
-    return user;
+  /**
+   * @deprecated Email/password login is no longer supported.
+   * Use Google OAuth instead via /auth/google
+   */
+  async findByLogin(): Promise<never> {
+    throw new BadRequestException(
+      'Email/password login is no longer supported. Please use Google Sign-In.',
+    );
   }
 
   async findByPayload(payload: { sub: string }) {
@@ -83,21 +58,13 @@ export class UsersService {
     return this.toResponse(user);
   }
 
-  async updatePassword(dto: UpdatePasswordDto, userId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('Usuário não encontrado');
-
-    const senhaOk = await compare(dto.oldPassword, user.senha);
-    if (!senhaOk) {
-      throw new UnauthorizedException('Senha atual incorreta');
-    }
-
-    const novaHash = await hash(dto.newPassword, 10);
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { senha: novaHash },
-    });
-    return { message: 'Senha atualizada com sucesso' };
+  /**
+   * @deprecated Password management is no longer supported with Google OAuth.
+   */
+  async updatePassword(): Promise<never> {
+    throw new BadRequestException(
+      'Password management is not available with Google OAuth authentication.',
+    );
   }
 
   async updateUser(id: string, dto: UpdateUserDto) {
@@ -114,7 +81,10 @@ export class UsersService {
       where: { id },
       data,
     });
-    return { message: 'Usuário atualizado com sucesso', user: this.toResponse(user) };
+    return {
+      message: 'Usuário atualizado com sucesso',
+      user: this.toResponse(user),
+    };
   }
 
   async updatePreferences(id: string, dto: UpdatePreferencesDto) {
@@ -133,12 +103,18 @@ export class UsersService {
   }
 
   async enable2FA(id: string) {
-    await this.prisma.user.update({ where: { id }, data: { twoFactorEnabled: true } });
+    await this.prisma.user.update({
+      where: { id },
+      data: { twoFactorEnabled: true },
+    });
     return { message: '2FA enabled (stub)' };
   }
 
   async disable2FA(id: string) {
-    await this.prisma.user.update({ where: { id }, data: { twoFactorEnabled: false } });
+    await this.prisma.user.update({
+      where: { id },
+      data: { twoFactorEnabled: false },
+    });
     return { message: '2FA disabled (stub)' };
   }
 
