@@ -162,11 +162,11 @@ export class UserResponseDto {
   })
   id: string;
 
-  @ApiProperty({
-    description: 'Email do usuario',
-    example: 'usuario@empresa.com',
+  @ApiPropertyOptional({
+    description: 'Email mascarado do usuario (sem plaintext)',
+    example: 'u***@g***.com',
   })
-  email: string;
+  email?: string;
 
   @ApiProperty({
     description: 'Nome completo do usuario',

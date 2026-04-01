@@ -11,6 +11,7 @@ import {
   GoogleProfileDto,
   AuthTokensResponseDto,
 } from './dto/google-oauth.dto';
+import { createHmac } from 'crypto';
 
 @Injectable()
 export class GoogleOAuthService {
@@ -18,6 +19,8 @@ export class GoogleOAuthService {
   private clientId: string;
   private clientSecret: string;
   private redirectUri: string;
+  private emailHmacKey: string;
+  private bcryptRounds: number;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -28,6 +31,8 @@ export class GoogleOAuthService {
     this.redirectUri =
       process.env.GOOGLE_REDIRECT_URI ||
       'http://localhost:5173/auth/callback/google';
+    this.emailHmacKey = process.env.EMAIL_HMAC_KEY || '';
+    this.bcryptRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
 
     this.oauth2Client = new OAuth2Client(
       this.clientId,
@@ -40,6 +45,20 @@ export class GoogleOAuthService {
         'Google OAuth credentials not configured. Google login will not work.',
       );
     }
+
+    if (!this.emailHmacKey) {
+      throw new Error('EMAIL_HMAC_KEY is required to hash emails');
+    }
+  }
+
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
+  private hmacEmail(email: string): string {
+    return createHmac('sha256', this.emailHmacKey)
+      .update(email)
+      .digest('hex');
   }
 
   /**
@@ -53,6 +72,7 @@ export class GoogleOAuthService {
       scope: scopes,
       prompt: 'consent',
       state: state,
+      redirect_uri: this.redirectUri,
     });
   }
 
@@ -63,7 +83,10 @@ export class GoogleOAuthService {
     code: string,
   ): Promise<{ idToken: string; accessToken: string }> {
     try {
-      const { tokens } = await this.oauth2Client.getToken(code);
+      const { tokens } = await this.oauth2Client.getToken({
+        code,
+        redirect_uri: this.redirectUri,
+      });
 
       if (!tokens.id_token) {
         throw new UnauthorizedException('No ID token received from Google');
@@ -114,25 +137,43 @@ export class GoogleOAuthService {
   ): Promise<{ user: any; isNew: boolean }> {
     const { googleId, email, name, picture } = googleProfile;
 
+    const normalizedEmail = this.normalizeEmail(email);
+    const emailIndex = this.hmacEmail(normalizedEmail);
+
     // First, try to find by Google ID
     let user = await this.prisma.user.findUnique({
       where: { googleId },
     });
 
     if (user) {
-      // Update avatar if changed
-      if (picture && user.avatar !== picture) {
-        user = await this.prisma.user.update({
-          where: { id: user.id },
-          data: { avatar: picture },
-        });
-      }
-      return { user, isNew: false };
+    // Update avatar or email hash if changed
+    const updates: Record<string, any> = {};
+    if (picture && user.avatar !== picture) {
+      updates.avatar = picture;
     }
+
+    if (!user.emailIndex) {
+      updates.emailIndex = emailIndex;
+    }
+
+    if (!user.emailBcrypt) {
+      updates.emailBcrypt = await bcrypt.hash(normalizedEmail, this.bcryptRounds);
+    }
+
+    if (!user.emailMasked) {
+      updates.emailMasked = this.maskEmail(normalizedEmail);
+    }
+
+    if (Object.keys(updates).length > 0) {
+      user = await this.prisma.user.update({ where: { id: user.id }, data: updates });
+    }
+
+    return { user, isNew: false };
+  }
 
     // Check if email already exists (user registered with different method)
     const existingEmailUser = await this.prisma.user.findUnique({
-      where: { email },
+      where: { emailIndex },
     });
 
     if (existingEmailUser) {
@@ -148,9 +189,13 @@ export class GoogleOAuthService {
     }
 
     // Create new user
+    const emailBcrypt = await bcrypt.hash(normalizedEmail, this.bcryptRounds);
+
     user = await this.prisma.user.create({
       data: {
-        email,
+        emailIndex,
+        emailBcrypt,
+        emailMasked: this.maskEmail(normalizedEmail),
         nome: name,
         googleId,
         avatar: picture,
@@ -169,7 +214,10 @@ export class GoogleOAuthService {
   ): Promise<AuthTokensResponseDto & { isNew: boolean }> {
     // Generate access token
     const { token: accessToken, jti: accessJti } =
-      await this.jwtService.generateAccessToken(user.id, user.email);
+      await this.jwtService.generateAccessToken(
+        user.id,
+        user.emailMasked || undefined,
+      );
 
     // Generate refresh token
     const {
@@ -202,8 +250,8 @@ export class GoogleOAuthService {
       refreshToken,
       user: {
         id: user.id,
-        email: user.email,
-        nome: user.nome,
+        email: user.emailMasked || undefined,
+        name: user.nome || user.name || user.email,
         avatar: user.avatar,
         isNew: user.isNew || false,
       },
@@ -246,5 +294,15 @@ export class GoogleOAuthService {
       Math.random().toString(36).substring(2, 15) +
       Math.random().toString(36).substring(2, 15)
     );
+  }
+
+  private maskEmail(email: string): string {
+    const [user, domain] = email.split('@');
+    if (!domain) return '***';
+    const u = user || '';
+    const d = domain || '';
+    const maskedUser = u.length <= 2 ? `${u[0] || '*'}*` : `${u[0]}***${u.slice(-1)}`;
+    const maskedDomain = d.length <= 3 ? `${d[0] || '*'}**` : `${d[0]}***${d.slice(-1)}`;
+    return `${maskedUser}@${maskedDomain}`;
   }
 }

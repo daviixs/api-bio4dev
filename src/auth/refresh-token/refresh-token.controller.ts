@@ -26,6 +26,10 @@ export class RefreshTokenController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const refreshToken = this.extractRefreshToken(dto.refreshToken, req);
+    if (!refreshToken) {
+      throw new Error('Refresh token ausente');
+    }
+
     const { accessToken, refreshToken: newRefreshToken } =
       await this.refreshTokenService.refreshAccessToken(refreshToken);
 

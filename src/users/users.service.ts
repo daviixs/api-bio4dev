@@ -12,11 +12,30 @@ import {
   UpdateUserDto,
   UpdatePreferencesDto,
 } from '../dto/users.dto';
+import { createHmac } from 'crypto';
 import { Role } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
+
+  private getEmailHmacKey(): string {
+    const key = process.env.EMAIL_HMAC_KEY || '';
+    if (!key) {
+      throw new UnauthorizedException('EMAIL_HMAC_KEY not configured');
+    }
+    return key;
+  }
+
+  private normalizeEmail(email: string) {
+    return email.trim().toLowerCase();
+  }
+
+  private hmacEmail(email: string) {
+    return createHmac('sha256', this.getEmailHmacKey())
+      .update(email)
+      .digest('hex');
+  }
 
   /**
    * @deprecated Email/password registration is no longer supported.
@@ -69,10 +88,15 @@ export class UsersService {
 
   async updateUser(id: string, dto: UpdateUserDto) {
     const data: any = {
-      email: dto.email,
       nome: dto.nome,
       username: dto.username,
     };
+
+    if (dto.email) {
+      const normalized = this.normalizeEmail(dto.email);
+      data.emailIndex = this.hmacEmail(normalized);
+      data.emailMasked = this.maskEmail(normalized);
+    }
 
     const prismaRole = this.toPrismaRole(dto.role);
     if (prismaRole) data.role = prismaRole;
@@ -127,7 +151,7 @@ export class UsersService {
   toResponse(user: any): UserResponseDto {
     return {
       id: user.id,
-      email: user.email,
+      email: user.emailMasked || undefined,
       nome: user.nome,
       username: user.username,
       emailNotifications: user.emailNotifications,
@@ -163,5 +187,15 @@ export class UsersService {
       default:
         return UserRole.USER;
     }
+  }
+
+  private maskEmail(email: string): string {
+    const [user, domain] = email.split('@');
+    if (!domain) return '***';
+    const u = user || '';
+    const d = domain || '';
+    const maskedUser = u.length <= 2 ? `${u[0] || '*'}*` : `${u[0]}***${u.slice(-1)}`;
+    const maskedDomain = d.length <= 3 ? `${d[0] || '*'}**` : `${d[0]}***${d.slice(-1)}`;
+    return `${maskedUser}@${maskedDomain}`;
   }
 }

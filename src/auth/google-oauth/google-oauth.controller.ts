@@ -98,7 +98,7 @@ export class GoogleOAuthController {
       // Return response without the refresh token (it's in the cookie)
       return {
         accessToken: result.accessToken,
-        refreshToken: result.refreshToken, // Also include for mobile apps
+        refreshToken: result.refreshToken, // mobile clients may use it
         user: result.user,
         isNew: result.isNew,
       };

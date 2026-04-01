@@ -50,7 +50,8 @@ export class RefreshTokenService {
 
       await this.revokeToken(jti);
 
-      return this.generateNewTokens(userId, storedToken.user.email, storedToken.user.nome);
+      const displayEmail = storedToken.user['emailMasked'] || storedToken.user.email || '';
+      return this.generateNewTokens(userId, displayEmail, storedToken.user.nome);
     } catch (error) {
       throw new UnauthorizedException('Falha ao renovar sessão');
     }
