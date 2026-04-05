@@ -21,7 +21,7 @@ async function bootstrap() {
       ];
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: allowedOrigins.includes('*') ? true : allowedOrigins,
     credentials: true,
   });
 
@@ -87,6 +87,6 @@ async function bootstrap() {
   );
 
   // Use PORT from env, fallback to 3000 to avoid clashes with common local services
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 bootstrap();
