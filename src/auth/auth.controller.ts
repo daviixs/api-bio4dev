@@ -13,7 +13,7 @@ export class AuthController {
    */
   @ApiOperation({ summary: 'Deprecated - Use Google OAuth at /auth/google' })
   @Post('register')
-  public async register(): Promise<never> {
+  public register(): never {
     throw new BadRequestException(
       'Email/password registration is no longer supported. Please use Google Sign-In at /auth/google',
     );
@@ -25,7 +25,7 @@ export class AuthController {
    */
   @ApiOperation({ summary: 'Deprecated - Use Google OAuth at /auth/google' })
   @Post('login')
-  public async login(): Promise<never> {
+  public login(): never {
     throw new BadRequestException(
       'Email/password login is no longer supported. Please use Google Sign-In at /auth/google',
     );

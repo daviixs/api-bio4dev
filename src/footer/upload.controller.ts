@@ -34,14 +34,18 @@ export class UploadController {
       storage: diskStorage({
         destination: './uploads',
         filename: (req, file, callback) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           const ext = extname(file.originalname);
           callback(null, `resume-${uniqueSuffix}${ext}`);
         },
       }),
       fileFilter: (req, file, callback) => {
         if (!file.originalname.match(/\.(pdf|doc|docx)$/)) {
-          return callback(new Error('Apenas arquivos PDF ou Word são permitidos!'), false);
+          return callback(
+            new Error('Apenas arquivos PDF ou Word são permitidos!'),
+            false,
+          );
         }
         callback(null, true);
       },

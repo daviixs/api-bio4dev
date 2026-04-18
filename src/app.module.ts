@@ -32,7 +32,13 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, UsersModule, AnalyticsModule, OnboardingModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    UsersModule,
+    AnalyticsModule,
+    OnboardingModule,
+  ],
   controllers: [
     AppController,
     UsersController,

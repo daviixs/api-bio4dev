@@ -30,7 +30,7 @@ export class AuthService {
    * @deprecated Email/password login is no longer supported.
    * Use Google OAuth instead via /auth/google
    */
-  async login(): Promise<never> {
+  login(): never {
     throw new BadRequestException(
       'Email/password login is no longer supported. Please use Google Sign-In.',
     );

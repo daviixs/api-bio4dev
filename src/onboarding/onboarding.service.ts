@@ -155,9 +155,8 @@ export class OnboardingService {
   ) {
     const candidates = Array.from(
       new Set([
-        displayName.trim().slice(0, 40),
-        slug.slice(0, 40),
-      ].filter(Boolean)),
+        [displayName.trim().slice(0, 40), slug.slice(0, 40)].filter(Boolean),
+      ),
     );
 
     for (const candidate of candidates) {
@@ -312,7 +311,7 @@ export class OnboardingService {
       data: buttons.map((button, index) => ({
         profileId,
         label: button.label,
-        url: button.url as string,
+        url: button.url,
         subtext: '',
         icon: 'link',
         style: 'primary',

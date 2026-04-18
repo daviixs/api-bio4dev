@@ -183,7 +183,10 @@ export class UserResponseDto {
   @ApiPropertyOptional({ description: 'Preferência de marketing emails', example: false })
   marketingEmails?: boolean;
 
-  @ApiPropertyOptional({ description: 'Preferência de alertas de segurança', example: true })
+  @ApiPropertyOptional({
+    description: 'Preferência de alertas de segurança',
+    example: true,
+  })
   securityAlerts?: boolean;
 
   @ApiPropertyOptional({ description: 'Idioma preferido', example: 'en' })
@@ -216,12 +219,18 @@ export class UserResponseDto {
 }
 
 export class UpdatePreferencesDto {
-  @ApiPropertyOptional({ description: 'Receber notificações por email', example: true })
+  @ApiPropertyOptional({
+    description: 'Receber notificações por email',
+    example: true,
+  })
   @IsOptional()
   @IsBoolean({ message: 'emailNotifications deve ser booleano' })
   emailNotifications?: boolean;
 
-  @ApiPropertyOptional({ description: 'Receber emails de marketing', example: false })
+  @ApiPropertyOptional({
+    description: 'Receber emails de marketing',
+    example: false,
+  })
   @IsOptional()
   @IsBoolean({ message: 'marketingEmails deve ser booleano' })
   marketingEmails?: boolean;

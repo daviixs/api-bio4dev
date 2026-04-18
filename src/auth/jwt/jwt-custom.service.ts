@@ -124,7 +124,7 @@ export class JwtCustomService implements OnModuleInit {
     }
   }
 
-  async decodeToken(token: string): Promise<TokenPayload | null> {
+  decodeToken(token: string): TokenPayload | null {
     try {
       // Decode without verification (for extracting claims)
       const parts = token.split('.');

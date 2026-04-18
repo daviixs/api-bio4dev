@@ -139,7 +139,7 @@ export class ProfileService {
       });
 
       if (conflict) {
-        throw new BadRequestException(`Slug \"${normalized}\" já está em uso`);
+        throw new BadRequestExion(`Slug \"${normalized}\" já está em uso`);
       }
 
       slug = normalized;

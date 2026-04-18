@@ -118,7 +118,9 @@ export class FinalizeOnboardingDto {
   })
   @IsOptional()
   @IsArray({ message: 'selectedPlatforms deve ser um array' })
-  @ArrayMaxSize(20, { message: 'selectedPlatforms deve ter no máximo 20 itens' })
+  @ArrayMaxSize(20, {
+    message: 'selectedPlatforms deve ter no máximo 20 itens',
+  })
   @IsString({ each: true, message: 'selectedPlatforms deve conter strings' })
   selectedPlatforms?: string[];
 

@@ -16,7 +16,10 @@ describe('AnalyticsService', () => {
   });
 
   it('calculates overview growth and bounce correctly', async () => {
-    prisma.profile.findUnique.mockResolvedValue({ id: 'p1', userId: 'u1' } as any);
+    prisma.profile.findUnique.mockResolvedValue({
+      id: 'p1',
+      userId: 'u1',
+    } as any);
     (prisma.$queryRaw as any)
       .mockResolvedValueOnce([{ visits: 100, avg_session: 5000, bounce: 0.25 }])
       .mockResolvedValueOnce([{ visits: 50 }]);

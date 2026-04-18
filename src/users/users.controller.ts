@@ -34,7 +34,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Dados do usuário autenticado' })
   @ApiOkResponse({ type: UserResponseDto })
   @Get('me')
-  public async me(@Request() req: any): Promise<UserResponseDto> {
+  publicme(@Request() req: any): UserResponseDto> {
     // req.user vem do JwtStrategy.validate
     return req.user;
   }
@@ -55,7 +55,7 @@ export class UsersController {
     summary: 'Deprecated - Password management not available with Google OAuth',
   })
   @Put('password')
-  public async updatePassword() {
+  public updatePassword() {
     throw new BadRequestException(
       'Password management is not available with Google OAuth authentication.',
     );
@@ -87,7 +87,7 @@ export class UsersController {
     summary: 'Deprecated - Password management not available with Google OAuth',
   })
   @Patch(':id/password')
-  public async updatePasswordById() {
+  public updatePasswordById() {
     throw new BadRequestException(
       'Password management is not available with Google OAuth authentication.',
     );

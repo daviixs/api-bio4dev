@@ -193,14 +193,22 @@ export class AnalyticsService {
       GROUP BY device;
     `;
 
-    return rows.map((row) => ({ device: row.device, value: Number(row.value ?? 0) }));
+    return rows.map((row) => ({
+      device: row.device,
+      value: Number(row.value ?? 0),
+    }));
   }
 
   detectDevice(userAgent: string | undefined): 'desktop' | 'mobile' | 'tablet' {
     if (!userAgent) return 'desktop';
     const ua = userAgent.toLowerCase();
     if (ua.includes('ipad') || ua.includes('tablet')) return 'tablet';
-    if (ua.includes('mobile') || ua.includes('iphone') || ua.includes('android')) return 'mobile';
+    if (
+      ua.includes('mobile') ||
+      ua.includes('iphone') ||
+      ua.includes('android')
+    )
+      return 'mobile';
     return 'desktop';
   }
 }

@@ -47,7 +47,12 @@ export class AnalyticsController {
     @Query('limit') limit = '10',
     @Query('range') range?: string,
   ): Promise<TopPage[]> {
-    return this.analyticsService.getTopPages(profileId, req.user['id'], Number(limit), range);
+    return this.analyticsService.getTopPages(
+      profileId,
+      req.user['id'],
+      Number(limit),
+      range,
+    );
   }
 
   @Get('devices')

@@ -168,7 +168,8 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString({ message: 'Slug deve ser uma string' })
   @Matches(/^[a-z0-9-]{3,60}$/, {
-    message: 'Slug deve ter 3-60 caracteres e conter apenas letras minúsculas, números e hífens',
+    message:
+      'Slug deve ter 3-60 caracteres e conter apenas letras minúsculas, números e hífens',
   })
   slug?: string;
 

@@ -160,9 +160,7 @@ export class GoogleOAuthController {
     status: 200,
     description: 'Successfully logged out',
   })
-  async logout(
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<{ message: string }> {
+  logout(@Res({ passthrough: true }) res: Response): { message: string } {
     // Clear the refresh token cookie
     res.clearCookie('refresh_token', {
       httpOnly: true,
