@@ -12,6 +12,7 @@ import {
   AuthTokensResponseDto,
 } from './dto/google-oauth.dto';
 import { createHmac } from 'crypto';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class GoogleOAuthService {
@@ -290,10 +291,7 @@ export class GoogleOAuthService {
   }
 
   private generateState(): string {
-    return (
-      Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15)
-    );
+    return randomBytes(24).toString('hex');
   }
 
   private maskEmail(email: string): string {

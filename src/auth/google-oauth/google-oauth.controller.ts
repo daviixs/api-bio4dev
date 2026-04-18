@@ -3,17 +3,43 @@ import {
   Get,
   Post,
   Query,
+  Req,
   Res,
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { GoogleOAuthService } from './google-oauth.service';
 import {
   AuthTokensResponseDto,
   OAuthCallbackQueryDto,
 } from './dto/google-oauth.dto';
+
+const GOOGLE_OAUTH_STATE_COOKIE = 'bio4dev_google_oauth_state';
+const googleOauthCookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 10 * 60 * 1000,
+  path: '/auth',
+};
+
+function getCookieValue(rawCookieHeader: string | undefined, name: string) {
+  if (!rawCookieHeader) {
+    return undefined;
+  }
+
+  const cookies = rawCookieHeader.split(';');
+  for (const cookie of cookies) {
+    const [cookieName, ...rest] = cookie.trim().split('=');
+    if (cookieName === name) {
+      return decodeURIComponent(rest.join('='));
+    }
+  }
+
+  return undefined;
+}
 
 @ApiTags('auth')
 @Controller('auth')
@@ -37,8 +63,12 @@ export class GoogleOAuthController {
       },
     },
   })
-  getGoogleAuthUrl(): { url: string; state: string } {
-    return this.googleOAuthService.getGoogleAuthUrl();
+  getGoogleAuthUrl(
+    @Res({ passthrough: true }) res: Response,
+  ): { url: string; state: string } {
+    const result = this.googleOAuthService.getGoogleAuthUrl();
+    res.cookie(GOOGLE_OAUTH_STATE_COOKIE, result.state, googleOauthCookieOptions);
+    return result;
   }
 
   /**
@@ -69,17 +99,30 @@ export class GoogleOAuthController {
   })
   async handleGoogleCallback(
     @Query() query: OAuthCallbackQueryDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthTokensResponseDto & { isNew: boolean }> {
-    const { code, error } = query;
+    const { code, error, state } = query;
 
     // Handle OAuth errors from Google
     if (error) {
+      res.clearCookie(GOOGLE_OAUTH_STATE_COOKIE, googleOauthCookieOptions);
       throw new UnauthorizedException(`Google OAuth error: ${error}`);
     }
 
     if (!code) {
+      res.clearCookie(GOOGLE_OAUTH_STATE_COOKIE, googleOauthCookieOptions);
       throw new BadRequestException('Authorization code is required');
+    }
+
+    const expectedState = getCookieValue(
+      req.headers.cookie,
+      GOOGLE_OAUTH_STATE_COOKIE,
+    );
+    res.clearCookie(GOOGLE_OAUTH_STATE_COOKIE, googleOauthCookieOptions);
+
+    if (!state || !expectedState || state !== expectedState) {
+      throw new UnauthorizedException('Invalid OAuth state');
     }
 
     try {
