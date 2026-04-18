@@ -101,7 +101,11 @@ export class UpdateSocialDto {
   })
   @IsOptional()
   @IsString({ message: 'URL deve ser uma string' })
-  @IsUrl({}, { message: 'URL deve ser valida' })
+  @ValidateIf((o) => !o.url?.startsWith('mailto:'))
+  @IsUrl(
+    { require_protocol: true, protocols: ['http', 'https'] },
+    { message: 'URL deve ser valida (ex: https://exemplo.com)' },
+  )
   url?: string;
 
   @ApiPropertyOptional({
