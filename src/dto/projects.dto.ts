@@ -5,11 +5,44 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUrl,
   IsUUID,
   Min,
   ValidateIf,
+  ValidationOptions,
+  registerDecorator,
 } from 'class-validator';
+
+function IsHttpUrl(validationOptions?: ValidationOptions) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      name: 'isHttpUrl',
+      target: object.constructor,
+      propertyName,
+      options: validationOptions,
+      validator: {
+        validate(value: unknown) {
+          if (value === undefined || value === null || value === '') {
+            return true;
+          }
+
+          if (typeof value !== 'string') {
+            return false;
+          }
+
+          try {
+            const parsedUrl = new URL(value);
+            return (
+              ['http:', 'https:'].includes(parsedUrl.protocol) &&
+              Boolean(parsedUrl.hostname)
+            );
+          } catch {
+            return false;
+          }
+        },
+      },
+    });
+  };
+}
 
 export class CreateProjetoDto {
   @ApiProperty({
@@ -41,7 +74,9 @@ export class CreateProjetoDto {
     example: 'https://site.com/demo.gif',
   })
   @IsOptional()
+  @ValidateIf((o) => o.gif !== '' && o.gif !== null && o.gif !== undefined)
   @IsString({ message: 'Gif deve ser uma string' })
+  @IsHttpUrl({ message: 'Gif deve ser uma URL valida' })
   gif?: string;
 
   @ApiPropertyOptional({
@@ -49,7 +84,11 @@ export class CreateProjetoDto {
     example: 'https://meu-projeto.com',
   })
   @IsOptional()
+  @ValidateIf(
+    (o) => o.demoLink !== '' && o.demoLink !== null && o.demoLink !== undefined,
+  )
   @IsString({ message: 'Demo link deve ser uma string' })
+  @IsHttpUrl({ message: 'Demo link deve ser uma URL valida' })
   demoLink?: string;
 
   @ApiPropertyOptional({
@@ -57,7 +96,11 @@ export class CreateProjetoDto {
     example: 'https://github.com/usuario/repo',
   })
   @IsOptional()
+  @ValidateIf(
+    (o) => o.codeLink !== '' && o.codeLink !== null && o.codeLink !== undefined,
+  )
   @IsString({ message: 'Code link deve ser uma string' })
+  @IsHttpUrl({ message: 'Code link deve ser uma URL valida' })
   codeLink?: string;
 
   @ApiPropertyOptional({
@@ -105,7 +148,7 @@ export class UpdateProjetoDto {
   @IsOptional()
   @ValidateIf((o) => o.gif !== '' && o.gif !== null && o.gif !== undefined)
   @IsString({ message: 'Gif deve ser uma string' })
-  @IsUrl({}, { message: 'Gif deve ser uma URL valida' })
+  @IsHttpUrl({ message: 'Gif deve ser uma URL valida' })
   gif?: string;
 
   @ApiPropertyOptional({
@@ -117,7 +160,7 @@ export class UpdateProjetoDto {
     (o) => o.demoLink !== '' && o.demoLink !== null && o.demoLink !== undefined,
   )
   @IsString({ message: 'Demo link deve ser uma string' })
-  @IsUrl({}, { message: 'Demo link deve ser uma URL valida' })
+  @IsHttpUrl({ message: 'Demo link deve ser uma URL valida' })
   demoLink?: string;
 
   @ApiPropertyOptional({
@@ -129,7 +172,7 @@ export class UpdateProjetoDto {
     (o) => o.codeLink !== '' && o.codeLink !== null && o.codeLink !== undefined,
   )
   @IsString({ message: 'Code link deve ser uma string' })
-  @IsUrl({}, { message: 'Code link deve ser uma URL valida' })
+  @IsHttpUrl({ message: 'Code link deve ser uma URL valida' })
   codeLink?: string;
 
   @ApiPropertyOptional({
