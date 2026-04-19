@@ -34,7 +34,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Dados do usuário autenticado' })
   @ApiOkResponse({ type: UserResponseDto })
   @Get('me')
-  publicme(@Request() req: any): UserResponseDto> {
+  public me(@Request() req: any): UserResponseDto {
     // req.user vem do JwtStrategy.validate
     return req.user;
   }

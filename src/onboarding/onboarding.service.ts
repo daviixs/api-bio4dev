@@ -154,7 +154,7 @@ export class OnboardingService {
     slug: string,
   ) {
     const candidates = Array.from(
-      new Set([
+      new Set(
         [displayName.trim().slice(0, 40), slug.slice(0, 40)].filter(Boolean),
       ),
     );

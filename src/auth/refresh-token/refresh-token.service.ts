@@ -64,7 +64,10 @@ export class RefreshTokenService {
   private async generateNewTokens(userId: string, email: string, nome?: string) {
     const { token: accessToken, jti: accessJti } =
       await this.jwtService.generateAccessToken(userId, email);
-    const { token: newRefreshToken, jti: refreshJti, expiresAt } =
+    const {
+      token: newRefreshToken,
+      jti: refreshJti,
+      expiresAt,
     } = await this.jwtService.generateRefreshToken(userId);
 
     const tokenHash = await bcrypt.hash(newRefreshToken, 10);
