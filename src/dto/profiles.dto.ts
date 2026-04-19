@@ -62,14 +62,16 @@ export class CreateProfileDto {
   bio?: string;
 
   @ApiPropertyOptional({
-    description: 'Slug do perfil que formará o link (3-60 caracteres, minúsculo, números e hífens)',
+    description:
+      'Slug do perfil que formará o link (3-60 caracteres, minúsculo, números e hífens)',
     example: 'ana-silva',
     maxLength: 60,
   })
   @IsOptional()
   @IsString({ message: 'Slug deve ser uma string' })
   @Matches(/^[a-z0-9-]{3,60}$/, {
-    message: 'Slug deve ter 3-60 caracteres e conter apenas letras minúsculas, números e hífens',
+    message:
+      'Slug deve ter 3-60 caracteres e conter apenas letras minúsculas, números e hífens',
   })
   slug?: string;
 
@@ -161,7 +163,8 @@ export class UpdateProfileDto {
   bio?: string;
 
   @ApiPropertyOptional({
-    description: 'Slug do perfil que formará o link (3-60 caracteres, minúsculo, números e hífens)',
+    description:
+      'Slug do perfil que formará o link (3-60 caracteres, minúsculo, números e hífens)',
     example: 'ana-silva-dev',
     maxLength: 60,
   })

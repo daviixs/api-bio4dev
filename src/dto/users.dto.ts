@@ -174,13 +174,22 @@ export class UserResponseDto {
   })
   nome: string;
 
-  @ApiPropertyOptional({ description: 'Username do usuario', example: 'john_doe' })
+  @ApiPropertyOptional({
+    description: 'Username do usuario',
+    example: 'john_doe',
+  })
   username?: string;
 
-  @ApiPropertyOptional({ description: 'Preferência de email notifications', example: true })
+  @ApiPropertyOptional({
+    description: 'Preferência de email notifications',
+    example: true,
+  })
   emailNotifications?: boolean;
 
-  @ApiPropertyOptional({ description: 'Preferência de marketing emails', example: false })
+  @ApiPropertyOptional({
+    description: 'Preferência de marketing emails',
+    example: false,
+  })
   marketingEmails?: boolean;
 
   @ApiPropertyOptional({

@@ -50,8 +50,13 @@ export class RefreshTokenService {
 
       await this.revokeToken(jti);
 
-      const displayEmail = storedToken.user['emailMasked'] || storedToken.user.email || '';
-      return this.generateNewTokens(userId, displayEmail, storedToken.user.nome);
+      const displayEmail =
+        storedToken.user['emailMasked'] || storedToken.user.email || '';
+      return this.generateNewTokens(
+        userId,
+        displayEmail,
+        storedToken.user.nome,
+      );
     } catch (error) {
       throw new UnauthorizedException('Falha ao renovar sessão');
     }
@@ -61,7 +66,11 @@ export class RefreshTokenService {
     return this.jwtService.verifyToken(refreshToken);
   }
 
-  private async generateNewTokens(userId: string, email: string, nome?: string) {
+  private async generateNewTokens(
+    userId: string,
+    email: string,
+    nome?: string,
+  ) {
     const { token: accessToken, jti: accessJti } =
       await this.jwtService.generateAccessToken(userId, email);
     const {

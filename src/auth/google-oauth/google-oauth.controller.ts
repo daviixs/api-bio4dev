@@ -63,11 +63,16 @@ export class GoogleOAuthController {
       },
     },
   })
-  getGoogleAuthUrl(
-    @Res({ passthrough: true }) res: Response,
-  ): { url: string; state: string } {
+  getGoogleAuthUrl(@Res({ passthrough: true }) res: Response): {
+    url: string;
+    state: string;
+  } {
     const result = this.googleOAuthService.getGoogleAuthUrl();
-    res.cookie(GOOGLE_OAUTH_STATE_COOKIE, result.state, googleOauthCookieOptions);
+    res.cookie(
+      GOOGLE_OAUTH_STATE_COOKIE,
+      result.state,
+      googleOauthCookieOptions,
+    );
     return result;
   }
 

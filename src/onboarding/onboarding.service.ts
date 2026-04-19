@@ -57,7 +57,8 @@ export class OnboardingService {
     const templateType = dto.templateType || 'template_04';
     const displayName = dto.displayName.trim() || normalizedSlug;
     const bio = dto.bio?.trim() || '';
-    const avatarUrl = this.normalizeExternalUrl(dto.avatarDataUrl) || DEFAULT_AVATAR_URL;
+    const avatarUrl =
+      this.normalizeExternalUrl(dto.avatarDataUrl) || DEFAULT_AVATAR_URL;
 
     return this.prisma.$transaction(async (tx) => {
       const profile = await this.createOrUpdateProfile(tx, {

@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   AnalyticsService,
   DeviceBreakdown,
@@ -37,7 +45,11 @@ export class AnalyticsController {
     @Query('range') range?: string,
     @Query('interval') _interval?: string,
   ): Promise<TimeseriesPoint[]> {
-    return this.analyticsService.getTimeseries(profileId, req.user['id'], range);
+    return this.analyticsService.getTimeseries(
+      profileId,
+      req.user['id'],
+      range,
+    );
   }
 
   @Get('top-pages')

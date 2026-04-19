@@ -57,9 +57,7 @@ export class GoogleOAuthService {
   }
 
   private hmacEmail(email: string): string {
-    return createHmac('sha256', this.emailHmacKey)
-      .update(email)
-      .digest('hex');
+    return createHmac('sha256', this.emailHmacKey).update(email).digest('hex');
   }
 
   /**
@@ -147,30 +145,36 @@ export class GoogleOAuthService {
     });
 
     if (user) {
-    // Update avatar or email hash if changed
-    const updates: Record<string, any> = {};
-    if (picture && user.avatar !== picture) {
-      updates.avatar = picture;
-    }
+      // Update avatar or email hash if changed
+      const updates: Record<string, any> = {};
+      if (picture && user.avatar !== picture) {
+        updates.avatar = picture;
+      }
 
-    if (!user.emailIndex) {
-      updates.emailIndex = emailIndex;
-    }
+      if (!user.emailIndex) {
+        updates.emailIndex = emailIndex;
+      }
 
-    if (!user.emailBcrypt) {
-      updates.emailBcrypt = await bcrypt.hash(normalizedEmail, this.bcryptRounds);
-    }
+      if (!user.emailBcrypt) {
+        updates.emailBcrypt = await bcrypt.hash(
+          normalizedEmail,
+          this.bcryptRounds,
+        );
+      }
 
-    if (!user.emailMasked) {
-      updates.emailMasked = this.maskEmail(normalizedEmail);
-    }
+      if (!user.emailMasked) {
+        updates.emailMasked = this.maskEmail(normalizedEmail);
+      }
 
-    if (Object.keys(updates).length > 0) {
-      user = await this.prisma.user.update({ where: { id: user.id }, data: updates });
-    }
+      if (Object.keys(updates).length > 0) {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: updates,
+        });
+      }
 
-    return { user, isNew: false };
-  }
+      return { user, isNew: false };
+    }
 
     // Check if email already exists (user registered with different method)
     const existingEmailUser = await this.prisma.user.findUnique({
@@ -299,7 +303,8 @@ export class GoogleOAuthService {
     if (!domain) return '***';
     const u = user || '';
     const d = domain || '';
-    const maskedUser = u.length <= 2 ? `${u[0] || '*'}*` : `${u[0]}***${u.slice(-1)}`;
+    const maskedUser =
+      u.length <= 2 ? `${u[0] || '*'}*` : `${u[0]}***${u.slice(-1)}`;
     const maskedDomain =
       d.length <= 3 ? `${d[0] || '*'}**` : `${d[0]}***${d.slice(-1)}`;
     return `${maskedUser}@${maskedDomain}`;

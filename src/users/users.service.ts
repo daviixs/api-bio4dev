@@ -194,7 +194,8 @@ export class UsersService {
     if (!domain) return '***';
     const u = user || '';
     const d = domain || '';
-    const maskedUser = u.length <= 2 ? `${u[0] || '*'}*` : `${u[0]}***${u.slice(-1)}`;
+    const maskedUser =
+      u.length <= 2 ? `${u[0] || '*'}*` : `${u[0]}***${u.slice(-1)}`;
     const maskedDomain =
       d.length <= 3 ? `${d[0] || '*'}**` : `${d[0]}***${d.slice(-1)}`;
     return `${maskedUser}@${maskedDomain}`;

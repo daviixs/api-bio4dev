@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 
 export interface OverviewResult {
@@ -41,7 +45,9 @@ export class AnalyticsService {
   }
 
   private async ensureProfileOwnership(userId: string, profileId: string) {
-    const profile = await this.prisma.profile.findUnique({ where: { id: profileId } });
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+    });
     if (!profile) throw new BadRequestException('Profile not found');
     if (profile.userId !== userId) throw new ForbiddenException('Not allowed');
   }
@@ -71,7 +77,11 @@ export class AnalyticsService {
     return { message: 'Visit recorded' };
   }
 
-  async getOverview(profileId: string, userId: string, range?: string): Promise<OverviewResult> {
+  async getOverview(
+    profileId: string,
+    userId: string,
+    range?: string,
+  ): Promise<OverviewResult> {
     await this.ensureProfileOwnership(userId, profileId);
 
     const days = this.resolveRange(range);
@@ -102,9 +112,10 @@ export class AnalyticsService {
     const currentVisits = Number(current?.visits ?? 0);
     const previousVisits = Number(previous?.visits ?? 0);
 
-    const growthPct = previousVisits > 0
-      ? ((currentVisits - previousVisits) / previousVisits) * 100
-      : null;
+    const growthPct =
+      previousVisits > 0
+        ? ((currentVisits - previousVisits) / previousVisits) * 100
+        : null;
 
     return {
       totalVisits: currentVisits,
@@ -115,7 +126,11 @@ export class AnalyticsService {
     };
   }
 
-  async getTimeseries(profileId: string, userId: string, range?: string): Promise<TimeseriesPoint[]> {
+  async getTimeseries(
+    profileId: string,
+    userId: string,
+    range?: string,
+  ): Promise<TimeseriesPoint[]> {
     await this.ensureProfileOwnership(userId, profileId);
 
     const days = this.resolveRange(range);
@@ -138,7 +153,12 @@ export class AnalyticsService {
     }));
   }
 
-  async getTopPages(profileId: string, userId: string, limit = 10, range?: string): Promise<TopPage[]> {
+  async getTopPages(
+    profileId: string,
+    userId: string,
+    limit = 10,
+    range?: string,
+  ): Promise<TopPage[]> {
     await this.ensureProfileOwnership(userId, profileId);
     const days = this.resolveRange(range);
     const startDate = new Date();
@@ -146,7 +166,9 @@ export class AnalyticsService {
     const previousStart = new Date(startDate);
     previousStart.setDate(previousStart.getDate() - days);
 
-    const current = await this.prisma.$queryRaw<{ path: string; visits: number }[]>`
+    const current = await this.prisma.$queryRaw<
+      { path: string; visits: number }[]
+    >`
       SELECT path, COUNT(*)::int AS visits
       FROM "Visit"
       WHERE "profileId" = ${profileId}
@@ -156,7 +178,9 @@ export class AnalyticsService {
       LIMIT ${limit};
     `;
 
-    const previous = await this.prisma.$queryRaw<{ path: string; visits: number }[]>`
+    const previous = await this.prisma.$queryRaw<
+      { path: string; visits: number }[]
+    >`
       SELECT path, COUNT(*)::int AS visits
       FROM "Visit"
       WHERE "profileId" = ${profileId}
@@ -165,11 +189,14 @@ export class AnalyticsService {
       GROUP BY path;
     `;
 
-    const previousMap = new Map(previous.map((p) => [p.path, Number(p.visits ?? 0)]));
+    const previousMap = new Map(
+      previous.map((p) => [p.path, Number(p.visits ?? 0)]),
+    );
 
     return current.map((row) => {
       const prev = previousMap.get(row.path) ?? 0;
-      const trendPct = prev > 0 ? ((Number(row.visits ?? 0) - prev) / prev) * 100 : null;
+      const trendPct =
+        prev > 0 ? ((Number(row.visits ?? 0) - prev) / prev) * 100 : null;
       return {
         path: row.path,
         visits: Number(row.visits ?? 0),
@@ -178,14 +205,20 @@ export class AnalyticsService {
     });
   }
 
-  async getDevices(profileId: string, userId: string, range?: string): Promise<DeviceBreakdown[]> {
+  async getDevices(
+    profileId: string,
+    userId: string,
+    range?: string,
+  ): Promise<DeviceBreakdown[]> {
     await this.ensureProfileOwnership(userId, profileId);
 
     const days = this.resolveRange(range);
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const rows = await this.prisma.$queryRaw<{ device: string; value: number }[]>`
+    const rows = await this.prisma.$queryRaw<
+      { device: string; value: number }[]
+    >`
       SELECT device, COUNT(*)::int AS value
       FROM "Visit"
       WHERE "profileId" = ${profileId}
