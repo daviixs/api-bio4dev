@@ -156,7 +156,10 @@ export class SocialController {
     },
   })
   @ApiResponse({ status: 404, description: 'Perfil não encontrado' })
-  async findByProfile(@Request() req: any, @Param('profileId') profileId: string) {
+  async findByProfile(
+    @Request() req: any,
+    @Param('profileId') profileId: string,
+  ) {
     return this.socialService.findByProfile(req.user.userId, profileId);
   }
 

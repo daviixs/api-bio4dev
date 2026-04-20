@@ -36,7 +36,10 @@ export class WorkexperinceController {
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 404, description: 'Profile não encontrado' })
   async create(@Request() req: any, @Body() data: CreateWorkExperienceDto) {
-    return this.workexperienceService.createWorkExperience(req.user.userId, data);
+    return this.workexperienceService.createWorkExperience(
+      req.user.userId,
+      data,
+    );
   }
 
   @Get()
@@ -64,7 +67,10 @@ export class WorkexperinceController {
     description: 'Lista de experiências do profile',
     type: [WorkExperienceResponseDto],
   })
-  async findByProfile(@Request() req: any, @Param('profileId') profileId: string) {
+  async findByProfile(
+    @Request() req: any,
+    @Param('profileId') profileId: string,
+  ) {
     return this.workexperienceService.findByProfile(req.user.userId, profileId);
   }
 

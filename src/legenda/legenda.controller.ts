@@ -62,6 +62,9 @@ export class LegendaController {
     @Request() req: any,
     @Param('profileId') profileId: string,
   ) {
-    return this.legendaService.getLegendaByProfileId(req.user.userId, profileId);
+    return this.legendaService.getLegendaByProfileId(
+      req.user.userId,
+      profileId,
+    );
   }
 }

@@ -74,7 +74,10 @@ export class ProjectsController {
     type: [ProjetoResponseDto],
   })
   @Get('profile/:profileId')
-  async findByProfileId(@Request() req: any, @Param('profileId') profileId: string) {
+  async findByProfileId(
+    @Request() req: any,
+    @Param('profileId') profileId: string,
+  ) {
     return this.projectsService.GetAllProjects(req.user.userId, profileId);
   }
 

@@ -105,11 +105,7 @@ export class FooterService {
     return footer;
   }
 
-  async update(
-    authenticatedUserId: string,
-    id: string,
-    data: UpdateFooterDto,
-  ) {
+  async update(authenticatedUserId: string, id: string, data: UpdateFooterDto) {
     await this.findOne(authenticatedUserId, id);
 
     return this.prisma.footer.update({

@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { JwtCustomService } from '../jwt/jwt-custom.service';
 import { OAuth2Client } from 'google-auth-library';
@@ -117,10 +114,7 @@ export class GoogleOAuthService {
 
       const googleId = payload.sub?.trim();
       const email = this.normalizeEmail(payload.email || '');
-      const name = this.normalizeDisplayName(
-        payload.name,
-        payload.email || '',
-      );
+      const name = this.normalizeDisplayName(payload.name, payload.email || '');
       const picture = this.normalizeAvatarUrl(payload.picture);
 
       if (!googleId || !email) {
@@ -231,9 +225,7 @@ export class GoogleOAuthService {
   /**
    * Generate access and refresh tokens for a user
    */
-  async generateAuthTokens(
-    user: any,
-  ): Promise<IssuedAuthTokensResponseDto> {
+  async generateAuthTokens(user: any): Promise<IssuedAuthTokensResponseDto> {
     // Generate access token
     const { token: accessToken, jti: accessJti } =
       await this.jwtService.generateAccessToken(

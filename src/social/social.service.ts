@@ -90,11 +90,7 @@ export class SocialService {
     return social;
   }
 
-  async update(
-    authenticatedUserId: string,
-    id: string,
-    data: UpdateSocialDto,
-  ) {
+  async update(authenticatedUserId: string, id: string, data: UpdateSocialDto) {
     // Verifica se existe
     const social = await this.prisma.social.findUnique({
       where: { id },

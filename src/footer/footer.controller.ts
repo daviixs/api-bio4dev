@@ -66,7 +66,10 @@ export class FooterController {
     type: FooterResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Footer não encontrado' })
-  async findByProfile(@Request() req: any, @Param('profileId') profileId: string) {
+  async findByProfile(
+    @Request() req: any,
+    @Param('profileId') profileId: string,
+  ) {
     return this.footerService.findByProfile(req.user.userId, profileId);
   }
 

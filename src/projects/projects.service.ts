@@ -33,7 +33,10 @@ export class ProjectsService {
 
   async GetAllProjects(authenticatedUserId: string, profileId?: string) {
     if (profileId) {
-      await this.ownership.assertProfileOwnership(profileId, authenticatedUserId);
+      await this.ownership.assertProfileOwnership(
+        profileId,
+        authenticatedUserId,
+      );
     }
 
     return this.prisma.projeto.findMany({
