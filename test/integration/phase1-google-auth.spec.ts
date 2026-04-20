@@ -1,10 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { PrismaService } from 'src/database/prisma.service';
 import { GoogleOAuthService } from 'src/auth/google-oauth/google-oauth.service';
 import { bootstrapApp } from '../helpers/app.helper';
 import { cleanAll } from '../helpers/db-cleaner';
+import {
+  loginWithGoogleSession,
+  startGoogleOAuthFlow,
+} from '../helpers/google-auth-session';
 import {
   createGoogleProfilePayload,
   createTamperedToken,
@@ -34,20 +37,20 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
   });
 
   describe('GET /auth/google', () => {
-    it('should return authorization URL and state cookie', async () => {
+    it('should redirect to Google and set the OAuth handoff cookie', async () => {
       const response = await request(app.getHttpServer())
         .get('/auth/google')
-        .expect(200);
+        .expect(302);
 
-      expect(response.body).toHaveProperty('url');
-      expect(response.body).toHaveProperty('state');
-      expect(response.body.url).toContain('accounts.google.com/o/oauth2');
+      expect(response.headers.location).toContain(
+        'accounts.google.com/o/oauth2',
+      );
 
       const setCookieHeaders = response.headers['set-cookie'];
       expect(setCookieHeaders).toBeDefined();
       expect(
         setCookieHeaders.some((c: string) =>
-          c.includes('bio4dev_google_oauth_state'),
+          c.includes('bio4dev_google_oauth_handoff'),
         ),
       ).toBeTruthy();
     });
@@ -71,26 +74,28 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
         .mockResolvedValue(mockProfile);
     });
 
-    it('should authenticate user and return tokens when CSRF state matches', async () => {
-      const stateId = 'fake-state-123';
+    it('should authenticate user, set session cookie, and redirect to frontend callback', async () => {
+      const agent = request.agent(app.getHttpServer());
+      const { state } = await startGoogleOAuthFlow(agent);
 
-      const response = await request(app.getHttpServer())
-        .get(`/auth/google/callback?code=mock-code&state=${stateId}`)
-        .set('Cookie', [`bio4dev_google_oauth_state=${stateId}`])
-        .expect(200);
+      const response = await agent
+        .get(`/auth/google/callback?code=mock-code&state=${state}`)
+        .expect(302);
 
-      expect(response.body).toHaveProperty('accessToken');
-      expect(response.body).not.toHaveProperty('refreshToken'); // Refresh is HttpOnly cookie
-      expect(response.body.user).toHaveProperty('email', mockProfile.email);
-      expect(response.body.user).not.toHaveProperty('emailBcrypt');
-      expect(response.body.user).not.toHaveProperty('emailIndex');
+      expect(response.headers.location).toContain(
+        '/auth/callback/google?status=success',
+      );
 
       const cookies = response.headers['set-cookie'];
       expect(
         cookies.some((c: string) => c.includes('refresh_token=')),
       ).toBeTruthy();
+      expect(
+        cookies.some((c: string) =>
+          c.includes('bio4dev_google_oauth_handoff=;'),
+        ),
+      ).toBeTruthy();
 
-      // Double assertion: check Database
       const savedUser = await prisma.user.findUnique({
         where: { googleId: mockProfile.googleId },
       });
@@ -98,39 +103,65 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
       expect(savedUser?.nome).toBe(mockProfile.name);
     });
 
-    it('should throw 401 when CSRF state is missing or mismatched', async () => {
-      // Missing cookie but query presents state
-      await request(app.getHttpServer())
-        .get('/auth/google/callback?code=mock-code&state=fake-state-123')
-        .expect(401);
+    it('should ignore extra Google query params and still authenticate', async () => {
+      const agent = request.agent(app.getHttpServer());
+      const { state } = await startGoogleOAuthFlow(agent);
 
-      // Mismatched state
+      const response = await agent
+        .get(
+          `/auth/google/callback?state=${state}&iss=${encodeURIComponent(
+            'https://accounts.google.com',
+          )}&code=mock-code&scope=${encodeURIComponent(
+            'email profile openid',
+          )}&authuser=0&prompt=consent`,
+        )
+        .expect(302);
+
+      expect(response.headers.location).toContain(
+        '/auth/callback/google?status=success',
+      );
+    });
+
+    it('should redirect with error when CSRF state is missing or mismatched', async () => {
       await request(app.getHttpServer())
         .get('/auth/google/callback?code=mock-code&state=fake-state-123')
-        .set('Cookie', ['bio4dev_google_oauth_state=another-different-state'])
-        .expect(401);
+        .expect(302)
+        .expect((response) => {
+          expect(response.headers.location).toContain(
+            '/auth/callback/google?status=error&reason=invalid_state',
+          );
+        });
+
+      const agent = request.agent(app.getHttpServer());
+      await startGoogleOAuthFlow(agent);
+      await agent
+        .get('/auth/google/callback?code=mock-code&state=fake-state-123')
+        .expect(302)
+        .expect((response) => {
+          expect(response.headers.location).toContain(
+            '/auth/callback/google?status=error&reason=invalid_state',
+          );
+        });
     });
 
     it('should apply rate limiting (Throttler) to stop bruteforce abuses', async () => {
-      // 100 requests limit according to our app.module configuration
-      // We will loop slightly above the limit
-
       const limit = 100;
-      let lastStatus = 200;
+      let lastStatus = 302;
 
       for (let i = 0; i < limit + 2; i++) {
-        const res = await request(app.getHttpServer())
+        await request(app.getHttpServer())
           .get('/auth/google/callback')
-          // Missing code ensures it fails fast with 400 without running real logic
           .expect((res) => {
-            // 400 bad request logic or 429 Too many requests
             if (res.status === 429) {
               lastStatus = 429;
+              return;
             }
+
+            expect(res.status).toBe(302);
           });
       }
 
-      expect(lastStatus).toBe(429); // 429 Too Many Requests was hit
+      expect(lastStatus).toBe(429);
     });
   });
 
@@ -149,13 +180,9 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
         .spyOn(googleService, 'verifyGoogleIdToken')
         .mockResolvedValue(mockProfile);
 
-      const stateId = 'initial-auth';
-      const authRes = await request(app.getHttpServer())
-        .get(`/auth/google/callback?code=mock-code&state=${stateId}`)
-        .set('Cookie', [`bio4dev_google_oauth_state=${stateId}`]);
-
-      accessToken = authRes.body.accessToken;
-      validUserId = authRes.body.user.id;
+      const session = await loginWithGoogleSession(app);
+      accessToken = session.accessToken;
+      validUserId = session.user.id;
     });
 
     it('should accept valid access token for protected route', async () => {

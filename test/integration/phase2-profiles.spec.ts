@@ -5,6 +5,7 @@ import { PrismaService } from 'src/database/prisma.service';
 import { GoogleOAuthService } from 'src/auth/google-oauth/google-oauth.service';
 import { bootstrapApp } from '../helpers/app.helper';
 import { cleanAll } from '../helpers/db-cleaner';
+import { loginWithGoogleSession } from '../helpers/google-auth-session';
 import {
   createGoogleProfilePayload,
   createProfilePayload,
@@ -27,18 +28,16 @@ describe('Phase 2 - Profile Management & Security', () => {
 
     // Creates two test users to simulate attacks across boundaries
     async function setupUserAndGetTokens() {
+      const googleProfile = createGoogleProfilePayload();
       jest
         .spyOn(googleService, 'exchangeCodeForTokens')
         .mockResolvedValue({ idToken: 'fake', accessToken: 'fake' });
       jest
         .spyOn(googleService, 'verifyGoogleIdToken')
-        .mockResolvedValue(createGoogleProfilePayload());
+        .mockResolvedValue(googleProfile);
 
-      const state = 'setup';
-      const res = await request(app.getHttpServer())
-        .get(`/auth/google/callback?code=mock&state=${state}`)
-        .set('Cookie', [`bio4dev_google_oauth_state=${state}`]);
-      return { token: res.body.accessToken, id: res.body.user.id };
+      const session = await loginWithGoogleSession(app, 'mock');
+      return { token: session.accessToken, id: session.user.id };
     }
 
     await cleanAll(prisma);

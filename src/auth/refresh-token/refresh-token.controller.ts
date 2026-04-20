@@ -6,12 +6,16 @@ import {
   Post,
   Req,
   Res,
+  UnauthorizedException,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
+import { IsOptional, IsString } from 'class-validator';
 import { RefreshTokenService } from './refresh-token.service';
 
 class RefreshDto {
+  @IsOptional()
+  @IsString()
   refreshToken?: string;
 }
 
@@ -29,15 +33,18 @@ export class RefreshTokenController {
   ) {
     const refreshToken = this.extractRefreshToken(dto.refreshToken, req);
     if (!refreshToken) {
-      throw new Error('Refresh token ausente');
+      throw new UnauthorizedException('Refresh token ausente');
     }
 
-    const { accessToken, refreshToken: newRefreshToken } =
+    const refreshedSession =
       await this.refreshTokenService.refreshAccessToken(refreshToken);
 
-    this.setRefreshCookie(res, newRefreshToken);
+    this.setRefreshCookie(res, refreshedSession.refreshToken);
 
-    return { accessToken };
+    return {
+      accessToken: refreshedSession.accessToken,
+      user: refreshedSession.user,
+    };
   }
 
   @Post('logout')

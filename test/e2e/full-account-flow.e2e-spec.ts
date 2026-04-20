@@ -5,6 +5,7 @@ import { PrismaService } from 'src/database/prisma.service';
 import { GoogleOAuthService } from 'src/auth/google-oauth/google-oauth.service';
 import { bootstrapApp } from '../helpers/app.helper';
 import { cleanAll } from '../helpers/db-cleaner';
+import { loginWithGoogleSession } from '../helpers/google-auth-session';
 import {
   createGoogleProfilePayload,
   createProfilePayload,
@@ -59,19 +60,16 @@ describe('E2E Full Account Flow - Security & Consistency', () => {
   });
 
   it('Step 1 & 2 - Registration & Login via Google Callback', async () => {
-    const stateId = 'secure-chained-state-1';
+    const session = await loginWithGoogleSession(app, 'chained-flow-code');
 
-    const response = await request(app.getHttpServer())
-      .get(`/auth/google/callback?code=chained-flow-code&state=${stateId}`)
-      .set('Cookie', [`bio4dev_google_oauth_state=${stateId}`])
-      .expect(200);
-
-    accessToken = response.body.accessToken;
-    userId = response.body.user.id;
+    accessToken = session.accessToken;
+    userId = session.user.id;
 
     expect(accessToken).toBeDefined();
     expect(userId).toBeDefined();
-    expect(response.body.user.email).toBe(mockGoogleProfile.email);
+    expect(session.callbackResponse.headers.location).toContain(
+      '/auth/callback/google?status=success',
+    );
   });
 
   it('Step 3 - Creation of Profile with Bio', async () => {

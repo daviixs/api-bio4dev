@@ -1,23 +1,10 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Query,
-  Req,
-  Res,
-  UnauthorizedException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { GoogleOAuthService } from './google-oauth.service';
-import {
-  WebAuthSessionResponseDto,
-  OAuthCallbackQueryDto,
-} from './dto/google-oauth.dto';
 
-const GOOGLE_OAUTH_STATE_COOKIE = 'bio4dev_google_oauth_state';
+const GOOGLE_OAUTH_HANDOFF_COOKIE = 'bio4dev_google_oauth_handoff';
 const googleOauthCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
@@ -49,45 +36,35 @@ export class GoogleOAuthController {
 
   /**
    * Initiate Google OAuth flow
-   * Returns the Google authorization URL for the frontend to redirect to
+   * Browser navigates directly here and backend redirects to Google
    */
   @Get('google')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  @ApiOperation({ summary: 'Get Google OAuth authorization URL' })
+  @ApiOperation({ summary: 'Start Google OAuth flow with backend redirect' })
   @ApiResponse({
-    status: 200,
-    description: 'Returns the Google OAuth authorization URL',
-    schema: {
-      type: 'object',
-      properties: {
-        url: { type: 'string', description: 'Google OAuth authorization URL' },
-        state: { type: 'string', description: 'CSRF state token' },
-      },
-    },
+    status: 302,
+    description: 'Redirects browser to Google OAuth',
   })
-  getGoogleAuthUrl(@Res({ passthrough: true }) res: Response): {
-    url: string;
-    state: string;
-  } {
-    const result = this.googleOAuthService.getGoogleAuthUrl();
+  async getGoogleAuthUrl(@Res() res: Response): Promise<void> {
+    const result = await this.googleOAuthService.createGoogleAuthRedirect();
     res.cookie(
-      GOOGLE_OAUTH_STATE_COOKIE,
-      result.state,
+      GOOGLE_OAUTH_HANDOFF_COOKIE,
+      result.handoffCookieValue,
       googleOauthCookieOptions,
     );
-    return result;
+    res.redirect(result.url);
   }
 
   /**
    * Handle Google OAuth callback
-   * Exchanges the authorization code for tokens and returns JWT tokens
+   * Completes the session server-side and redirects back to the frontend
    */
   @Get('google/callback')
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({ summary: 'Handle Google OAuth callback' })
   @ApiQuery({
     name: 'code',
-    required: true,
+    required: false,
     description: 'Authorization code from Google',
   })
   @ApiQuery({ name: 'state', required: false, description: 'CSRF state token' })
@@ -97,64 +74,78 @@ export class GoogleOAuthController {
     description: 'Error from Google OAuth',
   })
   @ApiResponse({
-    status: 200,
-    description: 'Returns JWT tokens and user info',
-    type: WebAuthSessionResponseDto,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'OAuth authentication failed',
+    status: 302,
+    description: 'Redirects browser back to frontend callback',
   })
   async handleGoogleCallback(
-    @Query() query: OAuthCallbackQueryDto,
+    @Query('code') code: string | undefined,
+    @Query('error') error: string | undefined,
+    @Query('state') state: string | undefined,
     @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<WebAuthSessionResponseDto> {
-    const { code, error, state } = query;
+    @Res() res: Response,
+  ): Promise<void> {
+    const handoff = this.googleOAuthService.verifyOAuthHandoffCookie(
+      getCookieValue(req.headers.cookie, GOOGLE_OAUTH_HANDOFF_COOKIE),
+    );
 
-    // Handle OAuth errors from Google
     if (error) {
-      res.clearCookie(GOOGLE_OAUTH_STATE_COOKIE, googleOauthCookieOptions);
-      throw new UnauthorizedException(`Google OAuth error: ${error}`);
+      this.clearOAuthHandoffCookie(res);
+      res.redirect(
+        this.googleOAuthService.buildFrontendCallbackUrl(
+          'error',
+          this.googleOAuthService.mapOAuthProviderError(error),
+        ),
+      );
+      return;
     }
 
     if (!code) {
-      res.clearCookie(GOOGLE_OAUTH_STATE_COOKIE, googleOauthCookieOptions);
-      throw new BadRequestException('Authorization code is required');
+      this.clearOAuthHandoffCookie(res);
+      res.redirect(
+        this.googleOAuthService.buildFrontendCallbackUrl(
+          'error',
+          'missing_code',
+        ),
+      );
+      return;
     }
 
-    const expectedState = getCookieValue(
-      req.headers.cookie,
-      GOOGLE_OAUTH_STATE_COOKIE,
-    );
-    res.clearCookie(GOOGLE_OAUTH_STATE_COOKIE, googleOauthCookieOptions);
-
-    if (!state || !expectedState || state !== expectedState) {
-      throw new UnauthorizedException('Invalid OAuth state');
+    if (!state || !handoff || state !== handoff.state) {
+      this.clearOAuthHandoffCookie(res);
+      res.redirect(
+        this.googleOAuthService.buildFrontendCallbackUrl(
+          'error',
+          'invalid_state',
+        ),
+      );
+      return;
     }
 
     try {
-      // Process the OAuth callback
-      const result = await this.googleOAuthService.handleOAuthCallback(code);
+      const result = await this.googleOAuthService.handleOAuthCallback(
+        code,
+        handoff.codeVerifier,
+      );
 
-      // Set refresh token as HttpOnly cookie
       res.cookie('refresh_token', result.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 7 * 24 * 60 * 60 * 1000,
         path: '/auth',
       });
+      this.clearOAuthHandoffCookie(res);
 
-      // Security best practice: keep refresh tokens cookie-only in browser flows.
-      return {
-        accessToken: result.accessToken,
-        user: result.user,
-        isNew: result.isNew,
-      };
+      res.redirect(this.googleOAuthService.buildFrontendCallbackUrl('success'));
     } catch (err) {
       console.error('OAuth callback error:', err);
-      throw new UnauthorizedException('Failed to authenticate with Google');
+      this.clearOAuthHandoffCookie(res);
+      res.redirect(
+        this.googleOAuthService.buildFrontendCallbackUrl(
+          'error',
+          'oauth_callback_failed',
+        ),
+      );
     }
   }
 
@@ -177,5 +168,9 @@ export class GoogleOAuthController {
     });
 
     return { message: 'Successfully logged out' };
+  }
+
+  private clearOAuthHandoffCookie(res: Response) {
+    res.clearCookie(GOOGLE_OAUTH_HANDOFF_COOKIE, googleOauthCookieOptions);
   }
 }

@@ -62,22 +62,21 @@ export class JwtStrategy
   }
 
   async validate(payload: JwtPayload): Promise<any> {
-    // For Google OAuth, we validate the token claims directly
     if (!payload.sub) {
       throw new HttpException('Invalid token payload', HttpStatus.UNAUTHORIZED);
     }
 
-    // If email is present, validate user exists
-    if (payload.email) {
-      const user = await this.authService.validateUser(payload);
-      if (!user) {
-        throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
-      }
-      return user;
+    const user = await this.authService.validateUser(payload).catch(() => null);
+    if (user) {
+      return {
+        ...user,
+        userId: user.id,
+        jti: payload.jti,
+      };
     }
 
-    // Return basic user info from token
     return {
+      id: payload.sub,
       userId: payload.sub,
       email: payload.email,
       role: payload.role,

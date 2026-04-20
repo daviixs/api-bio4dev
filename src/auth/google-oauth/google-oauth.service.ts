@@ -1,14 +1,21 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { JwtCustomService } from '../jwt/jwt-custom.service';
-import { OAuth2Client } from 'google-auth-library';
+import { CodeChallengeMethod, OAuth2Client } from 'google-auth-library';
 import * as bcrypt from 'bcrypt';
 import {
   GoogleProfileDto,
   IssuedAuthTokensResponseDto,
 } from './dto/google-oauth.dto';
-import { createHmac } from 'crypto';
-import { randomBytes } from 'crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
+
+type OAuthHandoffPayload = {
+  state: string;
+  codeVerifier: string;
+  issuedAt: number;
+};
+
+type FrontendCallbackStatus = 'success' | 'error';
 
 @Injectable()
 export class GoogleOAuthService {
@@ -16,8 +23,11 @@ export class GoogleOAuthService {
   private clientId: string;
   private clientSecret: string;
   private redirectUri: string;
+  private frontendRedirectUri: string;
   private emailHmacKey: string;
   private bcryptRounds: number;
+  private oauthCookieSecret: string;
+  private readonly oauthHandoffTtlMs = 10 * 60 * 1000;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -27,9 +37,17 @@ export class GoogleOAuthService {
     this.clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
     this.redirectUri =
       process.env.GOOGLE_REDIRECT_URI ||
-      'http://localhost:5173/auth/callback/google';
+      'http://localhost:3000/auth/google/callback';
+    this.frontendRedirectUri =
+      process.env.GOOGLE_FRONTEND_REDIRECT_URI ||
+      'http://localhost:4000/auth/callback/google';
     this.emailHmacKey = process.env.EMAIL_HMAC_KEY || '';
     this.bcryptRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+    this.oauthCookieSecret =
+      process.env.GOOGLE_OAUTH_COOKIE_SECRET ||
+      this.emailHmacKey ||
+      process.env.JWT_SECRET ||
+      '';
 
     this.oauth2Client = new OAuth2Client(
       this.clientId,
@@ -59,15 +77,24 @@ export class GoogleOAuthService {
   /**
    * Generate the Google OAuth authorization URL
    */
-  getAuthorizationUrl(state?: string): string {
+  getAuthorizationUrl(options: {
+    state: string;
+    codeChallenge?: string;
+  }): string {
     const scopes = ['openid', 'email', 'profile'];
 
     return this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: scopes,
       prompt: 'consent',
-      state: state,
+      state: options.state,
       redirect_uri: this.redirectUri,
+      ...(options.codeChallenge
+        ? {
+            code_challenge: options.codeChallenge,
+            code_challenge_method: CodeChallengeMethod.S256,
+          }
+        : {}),
     });
   }
 
@@ -76,11 +103,13 @@ export class GoogleOAuthService {
    */
   async exchangeCodeForTokens(
     code: string,
+    codeVerifier?: string,
   ): Promise<{ idToken: string; accessToken: string }> {
     try {
       const { tokens } = await this.oauth2Client.getToken({
         code,
         redirect_uri: this.redirectUri,
+        codeVerifier,
       });
 
       if (!tokens.id_token) {
@@ -278,9 +307,10 @@ export class GoogleOAuthService {
    */
   async handleOAuthCallback(
     code: string,
+    codeVerifier?: string,
   ): Promise<IssuedAuthTokensResponseDto> {
     // Exchange code for tokens
-    const { idToken } = await this.exchangeCodeForTokens(code);
+    const { idToken } = await this.exchangeCodeForTokens(code, codeVerifier);
 
     // Verify and extract profile
     const googleProfile = await this.verifyGoogleIdToken(idToken);
@@ -295,16 +325,119 @@ export class GoogleOAuthService {
   }
 
   /**
-   * Get authorization URL for frontend redirect
+   * Create backend-owned OAuth start payload for direct browser navigation
    */
-  getGoogleAuthUrl(): { url: string; state: string } {
+  async createGoogleAuthRedirect(): Promise<{
+    url: string;
+    state: string;
+    handoffCookieValue: string;
+  }> {
     const state = this.generateState();
-    const url = this.getAuthorizationUrl(state);
-    return { url, state };
+    const { codeVerifier, codeChallenge } =
+      await this.oauth2Client.generateCodeVerifierAsync();
+    const handoffCookieValue = this.signOAuthHandoff({
+      state,
+      codeVerifier,
+      issuedAt: Date.now(),
+    });
+    const url = this.getAuthorizationUrl({
+      state,
+      codeChallenge,
+    });
+    return { url, state, handoffCookieValue };
+  }
+
+  verifyOAuthHandoffCookie(
+    cookieValue: string | undefined,
+  ): OAuthHandoffPayload | null {
+    if (!cookieValue) {
+      return null;
+    }
+
+    const [encodedPayload, signature] = cookieValue.split('.');
+    if (!encodedPayload || !signature) {
+      return null;
+    }
+
+    const expectedSignature = this.createHandoffSignature(encodedPayload);
+    const actualSignatureBuffer = Buffer.from(signature, 'utf8');
+    const expectedSignatureBuffer = Buffer.from(expectedSignature, 'utf8');
+
+    if (actualSignatureBuffer.length !== expectedSignatureBuffer.length) {
+      return null;
+    }
+
+    if (!timingSafeEqual(actualSignatureBuffer, expectedSignatureBuffer)) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(
+        Buffer.from(encodedPayload, 'base64url').toString('utf8'),
+      ) as Partial<OAuthHandoffPayload>;
+
+      if (
+        typeof parsed.state !== 'string' ||
+        typeof parsed.codeVerifier !== 'string' ||
+        typeof parsed.issuedAt !== 'number'
+      ) {
+        return null;
+      }
+
+      if (Date.now() - parsed.issuedAt > this.oauthHandoffTtlMs) {
+        return null;
+      }
+
+      return {
+        state: parsed.state,
+        codeVerifier: parsed.codeVerifier,
+        issuedAt: parsed.issuedAt,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  buildFrontendCallbackUrl(
+    status: FrontendCallbackStatus,
+    reason?: string,
+  ): string {
+    const url = new URL(this.frontendRedirectUri);
+    url.searchParams.set('status', status);
+    if (reason) {
+      url.searchParams.set('reason', this.sanitizeFrontendReason(reason));
+    }
+    return url.toString();
+  }
+
+  mapOAuthProviderError(error: string): string {
+    if (error === 'access_denied') {
+      return 'access_denied';
+    }
+
+    return 'oauth_provider_error';
   }
 
   private generateState(): string {
     return randomBytes(24).toString('hex');
+  }
+
+  private signOAuthHandoff(payload: OAuthHandoffPayload): string {
+    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
+      'base64url',
+    );
+    const signature = this.createHandoffSignature(encodedPayload);
+    return `${encodedPayload}.${signature}`;
+  }
+
+  private createHandoffSignature(encodedPayload: string): string {
+    return createHmac('sha256', this.oauthCookieSecret)
+      .update(encodedPayload)
+      .digest('base64url');
+  }
+
+  private sanitizeFrontendReason(reason: string): string {
+    return /^[a-z0-9_-]+$/i.test(reason) ? reason : 'oauth_callback_failed';
   }
 
   private maskEmail(email: string): string {
