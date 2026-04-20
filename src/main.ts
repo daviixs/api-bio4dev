@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
@@ -24,6 +25,8 @@ async function bootstrap() {
     origin: allowedOrigins.includes('*') ? true : allowedOrigins,
     credentials: true,
   });
+
+  app.use(helmet());
 
   // Servir arquivos estáticos da pasta uploads
   expressApp.use('/uploads', express.static(join(__dirname, '..', 'uploads')));

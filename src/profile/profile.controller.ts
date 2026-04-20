@@ -7,8 +7,12 @@ import {
   Param,
   Query,
   Delete,
+  ForbiddenException,
   NotFoundException,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import {
   ApiTags,
   ApiOperation,
@@ -39,9 +43,10 @@ export class ProfileController {
 
   @ApiOperation({ summary: 'Criar novo perfil' })
   @ApiResponse({ status: 201, description: 'Perfil criado com sucesso' })
+  @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Body() createProfileDto: CreateProfileDto) {
-    return this.profileService.create(createProfileDto);
+  async create(@Request() req: any, @Body() createProfileDto: CreateProfileDto) {
+    return this.profileService.create(req.user.userId, createProfileDto);
   }
 
   // ===== ROTAS ESPECÍFICAS PRIMEIRO (antes de :id) =====
@@ -117,9 +122,10 @@ export class ProfileController {
   })
   @ApiResponse({ status: 404, description: 'Perfil não encontrado' })
   @ApiParam({ name: 'id', description: 'ID do perfil' })
+  @UseGuards(JwtAuthGuard)
   @Post(':id/preview-token')
-  async generatePreviewToken(@Param('id') id: string) {
-    return this.profileService.generatePreviewToken(id);
+  async generatePreviewToken(@Request() req: any, @Param('id') id: string) {
+    return this.profileService.generatePreviewToken(req.user.userId, id);
   }
 
   @ApiOperation({
@@ -152,21 +158,24 @@ export class ProfileController {
   @ApiResponse({ status: 200, description: 'Perfil atualizado com sucesso' })
   @ApiResponse({ status: 404, description: 'Perfil não encontrado' })
   @ApiParam({ name: 'id', description: 'ID do perfil' })
+  @UseGuards(JwtAuthGuard)
   @Post(':id')
   async update(
+    @Request() req: any,
     @Param('id') id: string,
     @Body() updateProfileDto: UpdateProfileDto,
   ) {
-    return this.profileService.updateProfile(id, updateProfileDto);
+    return this.profileService.updateProfile(req.user.userId, id, updateProfileDto);
   }
 
   @ApiOperation({ summary: 'Deletar perfil e todos os dados relacionados' })
   @ApiResponse({ status: 200, description: 'Perfil deletado com sucesso' })
   @ApiResponse({ status: 404, description: 'Perfil não encontrado' })
   @ApiParam({ name: 'id', description: 'ID do perfil' })
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  async delete(@Param('id') id: string) {
-    return this.profileService.delete(id);
+  async delete(@Request() req: any, @Param('id') id: string) {
+    return this.profileService.delete(req.user.userId, id);
   }
 
   @ApiOperation({
@@ -177,9 +186,13 @@ export class ProfileController {
   @ApiResponse({ status: 404, description: 'Portfolio não encontrado' })
   @ApiParam({ name: 'id', description: 'ID do portfolio' })
   @ApiBody({ type: SetActiveProfileDto })
+  @UseGuards(JwtAuthGuard)
   @Patch(':id/set-active')
-  async setActive(@Param('id') id: string, @Body() dto: SetActiveProfileDto) {
-    return this.profileService.setActiveProfile(id, dto.userId);
+  async setActive(@Request() req: any, @Param('id') id: string, @Body() dto: SetActiveProfileDto) {
+    if (dto.userId !== req.user.userId) {
+      throw new ForbiddenException('Acesso negado');
+    }
+    return this.profileService.setActiveProfile(id, req.user.userId);
   }
 
   @ApiOperation({ summary: 'Duplica um portfolio existente' })
@@ -216,13 +229,18 @@ export class ProfileController {
       },
     },
   })
+  @UseGuards(JwtAuthGuard)
   @Post(':id/duplicate')
   async duplicate(
+    @Request() req: any,
     @Param('id') id: string,
     @Body('userId') userId: string,
     @Body() dto: DuplicateProfileDto,
   ) {
-    return this.profileService.duplicateProfile(id, userId, dto);
+    if (userId !== req.user.userId) {
+      throw new ForbiddenException('Acesso negado');
+    }
+    return this.profileService.duplicateProfile(id, req.user.userId, dto);
   }
 
   @ApiOperation({ summary: 'Revoga um token de preview' })
@@ -230,11 +248,13 @@ export class ProfileController {
   @ApiResponse({ status: 404, description: 'Token não encontrado' })
   @ApiParam({ name: 'id', description: 'ID do portfolio' })
   @ApiParam({ name: 'token', description: 'Token de preview a ser revogado' })
+  @UseGuards(JwtAuthGuard)
   @Delete(':id/preview-token/:token')
   async revokePreviewToken(
+    @Request() req: any,
     @Param('id') profileId: string,
     @Param('token') token: string,
   ) {
-    return this.profileService.revokePreviewToken(profileId, token);
+    return this.profileService.revokePreviewToken(req.user.userId, profileId, token);
   }
 }

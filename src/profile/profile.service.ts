@@ -50,7 +50,12 @@ export class ProfileService {
     });
   }
 
-  async create(data: CreateProfileDto) {
+  async create(authenticatedUserId: string, data: CreateProfileDto) {
+    // ✅ VALIDAR: IDOR protection
+    if (data.userId !== authenticatedUserId) {
+      throw new ForbiddenException('Você não tem permissão para criar perfil em nome de outro usuário');
+    }
+
     // ✅ VALIDAR: usuário existe?
     const userExists = await this.prisma.user.findUnique({
       where: { id: data.userId },
@@ -123,7 +128,14 @@ export class ProfileService {
     };
   }
 
-  async updateProfile(id: string, data: UpdateProfileDto) {
+  async updateProfile(authenticatedUserId: string, id: string, data: UpdateProfileDto) {
+    const profile = await this.prisma.profile.findUnique({ where: { id } });
+    if (!profile) throw new NotFoundException('Perfil não encontrado');
+
+    if (profile.userId !== authenticatedUserId) {
+      throw new ForbiddenException('Acesso negado');
+    }
+
     let slug: string | undefined;
 
     if (data.slug !== undefined) {
@@ -294,7 +306,7 @@ export class ProfileService {
     return profile;
   }
 
-  async generatePreviewToken(profileId: string) {
+  async generatePreviewToken(authenticatedUserId: string, profileId: string) {
     // Verifica se o perfil existe
     const profile = await this.prisma.profile.findUnique({
       where: { id: profileId },
@@ -302,6 +314,10 @@ export class ProfileService {
 
     if (!profile) {
       throw new NotFoundException('Profile não encontrado');
+    }
+
+    if (profile.userId !== authenticatedUserId) {
+      throw new ForbiddenException('Acesso negado');
     }
 
     // Remove tokens antigos expirados deste perfil
@@ -331,7 +347,7 @@ export class ProfileService {
     };
   }
 
-  async delete(id: string) {
+  async delete(authenticatedUserId: string, id: string) {
     // Verifica se o perfil existe
     const profile = await this.prisma.profile.findUnique({
       where: { id },
@@ -339,6 +355,10 @@ export class ProfileService {
 
     if (!profile) {
       throw new NotFoundException(`Perfil com ID "${id}" não encontrado`);
+    }
+
+    if (profile.userId !== authenticatedUserId) {
+      throw new ForbiddenException('Acesso negado');
     }
 
     // Delete cascata está configurado no schema do Prisma
@@ -655,7 +675,12 @@ export class ProfileService {
     return newProfile;
   }
 
-  async revokePreviewToken(profileId: string, token: string) {
+  async revokePreviewToken(authenticatedUserId: string, profileId: string, token: string) {
+    const profile = await this.prisma.profile.findUnique({ where: { id: profileId } });
+    if (!profile || profile.userId !== authenticatedUserId) {
+      throw new ForbiddenException('Acesso negado');
+    }
+
     const deleted = await this.prisma.previewToken.deleteMany({
       where: { profileId, token },
     });
