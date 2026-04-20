@@ -15,7 +15,7 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let googleService: GoogleOAuthService;
-  
+
   beforeAll(async () => {
     app = await bootstrapApp();
     prisma = app.get<PrismaService>(PrismaService);
@@ -45,7 +45,11 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
 
       const setCookieHeaders = response.headers['set-cookie'];
       expect(setCookieHeaders).toBeDefined();
-      expect(setCookieHeaders.some((c: string) => c.includes('bio4dev_google_oauth_state'))).toBeTruthy();
+      expect(
+        setCookieHeaders.some((c: string) =>
+          c.includes('bio4dev_google_oauth_state'),
+        ),
+      ).toBeTruthy();
     });
   });
 
@@ -55,19 +59,21 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
     beforeEach(async () => {
       await cleanAll(prisma);
       mockProfile = createGoogleProfilePayload();
-      
+
       // Mocking Google Exchange so we don't hit external APIs
       jest.spyOn(googleService, 'exchangeCodeForTokens').mockResolvedValue({
         idToken: 'fake-id-token',
         accessToken: 'fake-access-token',
       });
 
-      jest.spyOn(googleService, 'verifyGoogleIdToken').mockResolvedValue(mockProfile);
+      jest
+        .spyOn(googleService, 'verifyGoogleIdToken')
+        .mockResolvedValue(mockProfile);
     });
 
     it('should authenticate user and return tokens when CSRF state matches', async () => {
       const stateId = 'fake-state-123';
-      
+
       const response = await request(app.getHttpServer())
         .get(`/auth/google/callback?code=mock-code&state=${stateId}`)
         .set('Cookie', [`bio4dev_google_oauth_state=${stateId}`])
@@ -80,7 +86,9 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
       expect(response.body.user).not.toHaveProperty('emailIndex');
 
       const cookies = response.headers['set-cookie'];
-      expect(cookies.some((c: string) => c.includes('refresh_token='))).toBeTruthy();
+      expect(
+        cookies.some((c: string) => c.includes('refresh_token=')),
+      ).toBeTruthy();
 
       // Double assertion: check Database
       const savedUser = await prisma.user.findUnique({
@@ -106,7 +114,7 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
     it('should apply rate limiting (Throttler) to stop bruteforce abuses', async () => {
       // 100 requests limit according to our app.module configuration
       // We will loop slightly above the limit
-      
+
       const limit = 100;
       let lastStatus = 200;
 
@@ -115,10 +123,10 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
           .get('/auth/google/callback')
           // Missing code ensures it fails fast with 400 without running real logic
           .expect((res) => {
-             // 400 bad request logic or 429 Too many requests
-             if (res.status === 429) {
-                lastStatus = 429;
-             }
+            // 400 bad request logic or 429 Too many requests
+            if (res.status === 429) {
+              lastStatus = 429;
+            }
           });
       }
 
@@ -133,9 +141,13 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
     beforeEach(async () => {
       await cleanAll(prisma);
       const mockProfile = createGoogleProfilePayload();
-      
-      jest.spyOn(googleService, 'exchangeCodeForTokens').mockResolvedValue({ idToken: 'fake', accessToken: 'fake' });
-      jest.spyOn(googleService, 'verifyGoogleIdToken').mockResolvedValue(mockProfile);
+
+      jest
+        .spyOn(googleService, 'exchangeCodeForTokens')
+        .mockResolvedValue({ idToken: 'fake', accessToken: 'fake' });
+      jest
+        .spyOn(googleService, 'verifyGoogleIdToken')
+        .mockResolvedValue(mockProfile);
 
       const stateId = 'initial-auth';
       const authRes = await request(app.getHttpServer())
@@ -154,8 +166,11 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
     });
 
     it('should reject tampered token (signature invalid)', async () => {
-      const tampered = createTamperedToken(accessToken, '00000000-0000-0000-0000-000000000000');
-      
+      const tampered = createTamperedToken(
+        accessToken,
+        '00000000-0000-0000-0000-000000000000',
+      );
+
       await request(app.getHttpServer())
         .get('/users/me')
         .set('Authorization', `Bearer ${tampered}`)
@@ -164,7 +179,7 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
 
     it('should reject algorithm "none" token completely', async () => {
       const noneToken = createNoneAlgorithmToken(validUserId);
-      
+
       await request(app.getHttpServer())
         .get('/users/me')
         .set('Authorization', `Bearer ${noneToken}`)

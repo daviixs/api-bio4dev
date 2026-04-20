@@ -35,8 +35,12 @@ describe('E2E Full Account Flow - Security & Consistency', () => {
     await cleanAll(prisma);
 
     // Mock Google Service methods so tests run locally detached from external networks
-    jest.spyOn(googleService, 'exchangeCodeForTokens').mockResolvedValue({ idToken: 'fake', accessToken: 'fake' });
-    jest.spyOn(googleService, 'verifyGoogleIdToken').mockResolvedValue(mockGoogleProfile);
+    jest
+      .spyOn(googleService, 'exchangeCodeForTokens')
+      .mockResolvedValue({ idToken: 'fake', accessToken: 'fake' });
+    jest
+      .spyOn(googleService, 'verifyGoogleIdToken')
+      .mockResolvedValue(mockGoogleProfile);
   });
 
   afterAll(async () => {
@@ -44,8 +48,10 @@ describe('E2E Full Account Flow - Security & Consistency', () => {
     await cleanAll(prisma);
 
     const userCount = await prisma.user.count({ where: { id: userId } });
-    const profileCount = await prisma.profile.count({ where: { id: profileId } });
-    
+    const profileCount = await prisma.profile.count({
+      where: { id: profileId },
+    });
+
     expect(userCount).toBe(0);
     expect(profileCount).toBe(0);
 
@@ -54,7 +60,7 @@ describe('E2E Full Account Flow - Security & Consistency', () => {
 
   it('Step 1 & 2 - Registration & Login via Google Callback', async () => {
     const stateId = 'secure-chained-state-1';
-    
+
     const response = await request(app.getHttpServer())
       .get(`/auth/google/callback?code=chained-flow-code&state=${stateId}`)
       .set('Cookie', [`bio4dev_google_oauth_state=${stateId}`])
@@ -62,7 +68,7 @@ describe('E2E Full Account Flow - Security & Consistency', () => {
 
     accessToken = response.body.accessToken;
     userId = response.body.user.id;
-    
+
     expect(accessToken).toBeDefined();
     expect(userId).toBeDefined();
     expect(response.body.user.email).toBe(mockGoogleProfile.email);
@@ -99,7 +105,7 @@ describe('E2E Full Account Flow - Security & Consistency', () => {
     expect(response.body).not.toHaveProperty('emailBcrypt');
     expect(response.body).not.toHaveProperty('emailIndex');
     expect(response.body).not.toHaveProperty('emailMasked');
-    expect(response.body.user).toBeUndefined(); // Should not eager load the internal User class 
+    expect(response.body.user).toBeUndefined(); // Should not eager load the internal User class
   });
 
   it('Step 5 - Consistency Validation on Prisma Service', async () => {

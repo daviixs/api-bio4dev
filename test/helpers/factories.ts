@@ -33,14 +33,19 @@ export function createExpiredToken(userId: string): string {
 /**
  * Forges an unverified, tampered token to test validation checks.
  */
-export function createTamperedToken(validToken: string, newUserId: string): string {
+export function createTamperedToken(
+  validToken: string,
+  newUserId: string,
+): string {
   const parts = validToken.split('.');
   if (parts.length !== 3) throw new Error('Invalid JWT format');
 
   const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
   payload.sub = newUserId;
 
-  const newPayloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64').replace(/=/g, '');
+  const newPayloadBase64 = Buffer.from(JSON.stringify(payload))
+    .toString('base64')
+    .replace(/=/g, '');
   return `${parts[0]}.${newPayloadBase64}.${parts[2]}`;
 }
 

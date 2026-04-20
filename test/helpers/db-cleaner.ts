@@ -1,12 +1,18 @@
 import { PrismaService } from 'src/database/prisma.service';
 
-export async function deleteUserByEmail(prisma: PrismaService, emailIndex: string): Promise<void> {
+export async function deleteUserByEmail(
+  prisma: PrismaService,
+  emailIndex: string,
+): Promise<void> {
   await prisma.user.deleteMany({
     where: { emailIndex },
   });
 }
 
-export async function deleteProfileByUserId(prisma: PrismaService, userId: string): Promise<void> {
+export async function deleteProfileByUserId(
+  prisma: PrismaService,
+  userId: string,
+): Promise<void> {
   await prisma.profile.deleteMany({
     where: { userId },
   });

@@ -45,7 +45,10 @@ export class ProfileController {
   @ApiResponse({ status: 201, description: 'Perfil criado com sucesso' })
   @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Request() req: any, @Body() createProfileDto: CreateProfileDto) {
+  async create(
+    @Request() req: any,
+    @Body() createProfileDto: CreateProfileDto,
+  ) {
     return this.profileService.create(req.user.userId, createProfileDto);
   }
 
@@ -165,7 +168,11 @@ export class ProfileController {
     @Param('id') id: string,
     @Body() updateProfileDto: UpdateProfileDto,
   ) {
-    return this.profileService.updateProfile(req.user.userId, id, updateProfileDto);
+    return this.profileService.updateProfile(
+      req.user.userId,
+      id,
+      updateProfileDto,
+    );
   }
 
   @ApiOperation({ summary: 'Deletar perfil e todos os dados relacionados' })
@@ -188,7 +195,11 @@ export class ProfileController {
   @ApiBody({ type: SetActiveProfileDto })
   @UseGuards(JwtAuthGuard)
   @Patch(':id/set-active')
-  async setActive(@Request() req: any, @Param('id') id: string, @Body() dto: SetActiveProfileDto) {
+  async setActive(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: SetActiveProfileDto,
+  ) {
     if (dto.userId !== req.user.userId) {
       throw new ForbiddenException('Acesso negado');
     }
@@ -255,6 +266,10 @@ export class ProfileController {
     @Param('id') profileId: string,
     @Param('token') token: string,
   ) {
-    return this.profileService.revokePreviewToken(req.user.userId, profileId, token);
+    return this.profileService.revokePreviewToken(
+      req.user.userId,
+      profileId,
+      token,
+    );
   }
 }

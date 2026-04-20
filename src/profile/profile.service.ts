@@ -53,7 +53,9 @@ export class ProfileService {
   async create(authenticatedUserId: string, data: CreateProfileDto) {
     // ✅ VALIDAR: IDOR protection
     if (data.userId !== authenticatedUserId) {
-      throw new ForbiddenException('Você não tem permissão para criar perfil em nome de outro usuário');
+      throw new ForbiddenException(
+        'Você não tem permissão para criar perfil em nome de outro usuário',
+      );
     }
 
     // ✅ VALIDAR: usuário existe?
@@ -128,7 +130,11 @@ export class ProfileService {
     };
   }
 
-  async updateProfile(authenticatedUserId: string, id: string, data: UpdateProfileDto) {
+  async updateProfile(
+    authenticatedUserId: string,
+    id: string,
+    data: UpdateProfileDto,
+  ) {
     const profile = await this.prisma.profile.findUnique({ where: { id } });
     if (!profile) throw new NotFoundException('Perfil não encontrado');
 
@@ -675,8 +681,14 @@ export class ProfileService {
     return newProfile;
   }
 
-  async revokePreviewToken(authenticatedUserId: string, profileId: string, token: string) {
-    const profile = await this.prisma.profile.findUnique({ where: { id: profileId } });
+  async revokePreviewToken(
+    authenticatedUserId: string,
+    profileId: string,
+    token: string,
+  ) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+    });
     if (!profile || profile.userId !== authenticatedUserId) {
       throw new ForbiddenException('Acesso negado');
     }

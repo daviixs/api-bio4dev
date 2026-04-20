@@ -27,14 +27,18 @@ describe('Phase 2 - Profile Management & Security', () => {
 
     // Creates two test users to simulate attacks across boundaries
     async function setupUserAndGetTokens() {
-        jest.spyOn(googleService, 'exchangeCodeForTokens').mockResolvedValue({ idToken: 'fake', accessToken: 'fake' });
-        jest.spyOn(googleService, 'verifyGoogleIdToken').mockResolvedValue(createGoogleProfilePayload());
-        
-        const state = 'setup';
-        const res = await request(app.getHttpServer())
-          .get(`/auth/google/callback?code=mock&state=${state}`)
-          .set('Cookie', [`bio4dev_google_oauth_state=${state}`]);
-        return { token: res.body.accessToken, id: res.body.user.id };
+      jest
+        .spyOn(googleService, 'exchangeCodeForTokens')
+        .mockResolvedValue({ idToken: 'fake', accessToken: 'fake' });
+      jest
+        .spyOn(googleService, 'verifyGoogleIdToken')
+        .mockResolvedValue(createGoogleProfilePayload());
+
+      const state = 'setup';
+      const res = await request(app.getHttpServer())
+        .get(`/auth/google/callback?code=mock&state=${state}`)
+        .set('Cookie', [`bio4dev_google_oauth_state=${state}`]);
+      return { token: res.body.accessToken, id: res.body.user.id };
     }
 
     await cleanAll(prisma);
@@ -55,7 +59,7 @@ describe('Phase 2 - Profile Management & Security', () => {
   describe('Profile Creation (POST /profile)', () => {
     it('3.1 - Valid configuration (happy path)', async () => {
       const payload = createProfilePayload();
-      
+
       const response = await request(app.getHttpServer())
         .post('/profile')
         .set('Authorization', `Bearer ${userA_Token}`)
@@ -115,7 +119,7 @@ describe('Phase 2 - Profile Management & Security', () => {
           userId: userA_Id, // THE ATTACK
         })
         .expect(403);
-      
+
       expect(failed.body.message).toContain('não tem permissão');
     });
 
@@ -133,7 +137,7 @@ describe('Phase 2 - Profile Management & Security', () => {
         .expect(400);
 
       expect(Array.isArray(failed.body.message)).toBeTruthy();
-      
+
       const count = await prisma.profile.count({ where: { userId: userB_Id } });
       expect(count).toBe(0); // Assures no partial creations occurred
     });
