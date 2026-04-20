@@ -8,6 +8,8 @@ import {
   Body,
   HttpCode,
   HttpStatus,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { TechstackService } from './techstack.service';
@@ -16,8 +18,10 @@ import {
   UpdateTechStackDto,
   TechStackResponseDto,
 } from 'src/dto/tech-stack.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('TechStack')
+@UseGuards(JwtAuthGuard)
 @Controller('techstack')
 export class TechstackController {
   constructor(private readonly techstackService: TechstackService) {}
@@ -31,8 +35,14 @@ export class TechstackController {
     type: TechStackResponseDto,
   })
   @ApiResponse({ status: 404, description: 'TechStack não encontrada' })
-  async getTechStackByProfile(@Param('profileId') profileId: string) {
-    return this.techstackService.getTechStackByProfile(profileId);
+  async getTechStackByProfile(
+    @Request() req: any,
+    @Param('profileId') profileId: string,
+  ) {
+    return this.techstackService.getTechStackByProfile(
+      req.user.userId,
+      profileId,
+    );
   }
 
   @Get(':id')
@@ -44,8 +54,8 @@ export class TechstackController {
     type: TechStackResponseDto,
   })
   @ApiResponse({ status: 404, description: 'TechStack não encontrada' })
-  async getTechStackById(@Param('id') id: string) {
-    return this.techstackService.getTechStackById(id);
+  async getTechStackById(@Request() req: any, @Param('id') id: string) {
+    return this.techstackService.getTechStackById(req.user.userId, id);
   }
 
   @Post('profile/:profileId')
@@ -61,10 +71,11 @@ export class TechstackController {
     description: 'TechStack já existe para este profile',
   })
   async create(
+    @Request() req: any,
     @Param('profileId') profileId: string,
     @Body() createDto: CreateTechStackDto,
   ) {
-    return this.techstackService.create(profileId, createDto);
+    return this.techstackService.create(req.user.userId, profileId, createDto);
   }
 
   @Put('profile/:profileId')
@@ -77,10 +88,11 @@ export class TechstackController {
   })
   @ApiResponse({ status: 404, description: 'TechStack não encontrada' })
   async update(
+    @Request() req: any,
     @Param('profileId') profileId: string,
     @Body() updateDto: UpdateTechStackDto,
   ) {
-    return this.techstackService.update(profileId, updateDto);
+    return this.techstackService.update(req.user.userId, profileId, updateDto);
   }
 
   @Delete(':id')
@@ -89,8 +101,8 @@ export class TechstackController {
   @ApiParam({ name: 'id', description: 'UUID da TechStack' })
   @ApiResponse({ status: 204, description: 'TechStack deletada com sucesso' })
   @ApiResponse({ status: 404, description: 'TechStack não encontrada' })
-  async deleteTechStackById(@Param('id') id: string) {
-    await this.techstackService.deleteTechStackById(id);
+  async deleteTechStackById(@Request() req: any, @Param('id') id: string) {
+    await this.techstackService.deleteTechStackById(req.user.userId, id);
   }
 
   @Delete('profile/:profileId')
@@ -99,7 +111,13 @@ export class TechstackController {
   @ApiParam({ name: 'profileId', description: 'UUID do Profile' })
   @ApiResponse({ status: 204, description: 'TechStack deletada com sucesso' })
   @ApiResponse({ status: 404, description: 'TechStack não encontrada' })
-  async deleteTechStackByProfile(@Param('profileId') profileId: string) {
-    await this.techstackService.deleteTechStackByProfile(profileId);
+  async deleteTechStackByProfile(
+    @Request() req: any,
+    @Param('profileId') profileId: string,
+  ) {
+    await this.techstackService.deleteTechStackByProfile(
+      req.user.userId,
+      profileId,
+    );
   }
 }

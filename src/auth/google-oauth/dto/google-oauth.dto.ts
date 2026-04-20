@@ -38,11 +38,12 @@ export class OAuthCallbackQueryDto {
 export class GoogleProfileDto {
   googleId: string;
   email: string;
+  emailVerified: boolean;
   name: string;
   picture?: string;
 }
 
-export class AuthTokensResponseDto {
+export class IssuedAuthTokensResponseDto {
   @ApiProperty({ description: 'JWT access token' })
   accessToken: string;
 
@@ -57,4 +58,24 @@ export class AuthTokensResponseDto {
     avatar?: string;
     isNew: boolean;
   };
+
+  @ApiProperty({ description: 'Whether this is a newly created account' })
+  isNew: boolean;
+}
+
+export class WebAuthSessionResponseDto {
+  @ApiProperty({ description: 'JWT access token' })
+  accessToken: string;
+
+  @ApiProperty({ description: 'User information' })
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    avatar?: string;
+    isNew: boolean;
+  };
+
+  @ApiProperty({ description: 'Whether this is a newly created account' })
+  isNew: boolean;
 }

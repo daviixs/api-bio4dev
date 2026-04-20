@@ -32,6 +32,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
+import { ProfileOwnershipService } from './security/profile-ownership.service';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { OnboardingModule } from './onboarding/onboarding.module';
     WorkexperienceService,
     FooterService,
     LinkButtonService,
+    ProfileOwnershipService,
   ],
 })
 export class AppModule {}

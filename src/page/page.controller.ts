@@ -5,6 +5,8 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -16,8 +18,10 @@ import {
 } from '@nestjs/swagger';
 import { PageService } from './page.service';
 import { PageDto } from 'src/dto/page.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('pages')
+@UseGuards(JwtAuthGuard)
 @Controller('pages')
 export class PageController {
   constructor(private readonly pageService: PageService) {}
@@ -29,8 +33,8 @@ export class PageController {
   @ApiBody({ type: PageDto })
   @ApiCreatedResponse({ description: 'Pagina criada com sucesso' })
   @Post()
-  async create(@Body() data: PageDto) {
-    return this.pageService.create(data);
+  async create(@Request() req: any, @Body() data: PageDto) {
+    return this.pageService.create(req.user.userId, data);
   }
 
   @ApiOperation({
@@ -46,10 +50,11 @@ export class PageController {
   @ApiOkResponse({ description: 'Pagina atualizada com sucesso' })
   @Patch(':id')
   async updatePage(
+    @Request() req: any,
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() data: PageDto,
   ) {
-    return this.pageService.updatePage(id, data);
+    return this.pageService.updatePage(req.user.userId, id, data);
   }
 
   @ApiOperation({
@@ -64,8 +69,9 @@ export class PageController {
   @ApiOkResponse({ description: 'Pagina recuperada com sucesso' })
   @Post(':id')
   async getPageById(
+    @Request() req: any,
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
   ) {
-    return this.pageService.getPageById(id);
+    return this.pageService.getPageById(req.user.userId, id);
   }
 }

@@ -6,6 +6,8 @@ import {
   Param,
   Patch,
   Post,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -20,8 +22,10 @@ import {
   UpdateSocialDto,
   SocialResponseDto,
 } from '../dto/social.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('social')
+@UseGuards(JwtAuthGuard)
 @Controller('social')
 export class SocialController {
   constructor(private readonly socialService: SocialService) {}
@@ -85,8 +89,8 @@ export class SocialController {
     status: 409,
     description: 'Já existe um link desta plataforma para este perfil',
   })
-  async create(@Body() dto: CreateSocialDto) {
-    return this.socialService.create(dto);
+  async create(@Request() req: any, @Body() dto: CreateSocialDto) {
+    return this.socialService.create(req.user.userId, dto);
   }
 
   @Get()
@@ -110,8 +114,8 @@ export class SocialController {
       ],
     },
   })
-  async findAll() {
-    return this.socialService.findAll();
+  async findAll(@Request() req: any) {
+    return this.socialService.findAll(req.user.userId);
   }
 
   @Get('profile/:profileId')
@@ -152,8 +156,8 @@ export class SocialController {
     },
   })
   @ApiResponse({ status: 404, description: 'Perfil não encontrado' })
-  async findByProfile(@Param('profileId') profileId: string) {
-    return this.socialService.findByProfile(profileId);
+  async findByProfile(@Request() req: any, @Param('profileId') profileId: string) {
+    return this.socialService.findByProfile(req.user.userId, profileId);
   }
 
   @Get(':id')
@@ -183,8 +187,8 @@ export class SocialController {
     },
   })
   @ApiResponse({ status: 404, description: 'Rede social não encontrada' })
-  async findOne(@Param('id') id: string) {
-    return this.socialService.findOne(id);
+  async findOne(@Request() req: any, @Param('id') id: string) {
+    return this.socialService.findOne(req.user.userId, id);
   }
 
   @Patch(':id')
@@ -238,8 +242,12 @@ export class SocialController {
     },
   })
   @ApiResponse({ status: 404, description: 'Rede social não encontrada' })
-  async update(@Param('id') id: string, @Body() dto: UpdateSocialDto) {
-    return this.socialService.update(id, dto);
+  async update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: UpdateSocialDto,
+  ) {
+    return this.socialService.update(req.user.userId, id, dto);
   }
 
   @Delete(':id')
@@ -262,7 +270,7 @@ export class SocialController {
     },
   })
   @ApiResponse({ status: 404, description: 'Rede social não encontrada' })
-  async delete(@Param('id') id: string) {
-    return this.socialService.delete(id);
+  async delete(@Request() req: any, @Param('id') id: string) {
+    return this.socialService.delete(req.user.userId, id);
   }
 }

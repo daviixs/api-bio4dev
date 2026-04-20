@@ -1,12 +1,21 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
 import { CreateFooterDto, UpdateFooterDto } from 'src/dto/footer.dto';
+import { ProfileOwnershipService } from 'src/security/profile-ownership.service';
 
 @Injectable()
 export class FooterService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ownership: ProfileOwnershipService,
+  ) {}
 
-  async create(data: CreateFooterDto) {
+  async create(authenticatedUserId: string, data: CreateFooterDto) {
+    await this.ownership.assertProfileOwnership(
+      data.profileId,
+      authenticatedUserId,
+    );
+
     // Verifica se já existe footer para este profile
     const existingFooter = await this.prisma.footer.findUnique({
       where: { profileId: data.profileId },
@@ -46,8 +55,13 @@ export class FooterService {
     });
   }
 
-  async findAll() {
+  async findAll(authenticatedUserId: string) {
     return this.prisma.footer.findMany({
+      where: {
+        profile: {
+          userId: authenticatedUserId,
+        },
+      },
       include: {
         profile: {
           select: {
@@ -58,7 +72,9 @@ export class FooterService {
     });
   }
 
-  async findByProfile(profileId: string) {
+  async findByProfile(authenticatedUserId: string, profileId: string) {
+    await this.ownership.assertProfileOwnership(profileId, authenticatedUserId);
+
     const footer = await this.prisma.footer.findUnique({
       where: { profileId },
     });
@@ -72,7 +88,7 @@ export class FooterService {
     return footer;
   }
 
-  async findOne(id: string) {
+  async findOne(authenticatedUserId: string, id: string) {
     const footer = await this.prisma.footer.findUnique({
       where: { id },
     });
@@ -81,11 +97,20 @@ export class FooterService {
       throw new NotFoundException(`Footer com ID ${id} não encontrado`);
     }
 
+    await this.ownership.assertProfileOwnership(
+      footer.profileId,
+      authenticatedUserId,
+    );
+
     return footer;
   }
 
-  async update(id: string, data: UpdateFooterDto) {
-    await this.findOne(id);
+  async update(
+    authenticatedUserId: string,
+    id: string,
+    data: UpdateFooterDto,
+  ) {
+    await this.findOne(authenticatedUserId, id);
 
     return this.prisma.footer.update({
       where: { id },
@@ -103,7 +128,13 @@ export class FooterService {
     });
   }
 
-  async updateByProfile(profileId: string, data: UpdateFooterDto) {
+  async updateByProfile(
+    authenticatedUserId: string,
+    profileId: string,
+    data: UpdateFooterDto,
+  ) {
+    await this.ownership.assertProfileOwnership(profileId, authenticatedUserId);
+
     const footer = await this.prisma.footer.findUnique({
       where: { profileId },
     });
@@ -130,15 +161,17 @@ export class FooterService {
     });
   }
 
-  async delete(id: string) {
-    await this.findOne(id);
+  async delete(authenticatedUserId: string, id: string) {
+    await this.findOne(authenticatedUserId, id);
 
     return this.prisma.footer.delete({
       where: { id },
     });
   }
 
-  async deleteByProfile(profileId: string) {
+  async deleteByProfile(authenticatedUserId: string, profileId: string) {
+    await this.ownership.assertProfileOwnership(profileId, authenticatedUserId);
+
     const footer = await this.prisma.footer.findUnique({
       where: { profileId },
     });

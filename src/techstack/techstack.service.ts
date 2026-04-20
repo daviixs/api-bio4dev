@@ -1,19 +1,25 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
 import { CreateTechStackDto, UpdateTechStackDto } from 'src/dto/tech-stack.dto';
+import { ProfileOwnershipService } from 'src/security/profile-ownership.service';
 
 @Injectable()
 export class TechstackService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ownership: ProfileOwnershipService,
+  ) {}
 
-  async getTechStackByProfile(profileId: string) {
+  async getTechStackByProfile(authenticatedUserId: string, profileId: string) {
+    await this.ownership.assertProfileOwnership(profileId, authenticatedUserId);
+
     return this.prisma.techStack.findUnique({
       where: { profileId },
       include: { technologies: { orderBy: { ordem: 'asc' } } },
     });
   }
 
-  async getTechStackById(id: string) {
+  async getTechStackById(authenticatedUserId: string, id: string) {
     const techStack = await this.prisma.techStack.findUnique({
       where: { id },
       include: { technologies: { orderBy: { ordem: 'asc' } } },
@@ -23,17 +29,28 @@ export class TechstackService {
       throw new NotFoundException(`TechStack with ID ${id} not found`);
     }
 
+    await this.ownership.assertProfileOwnership(
+      techStack.profileId,
+      authenticatedUserId,
+    );
+
     return techStack;
   }
 
-  async create(profileId: string, dto: CreateTechStackDto) {
+  async create(
+    authenticatedUserId: string,
+    profileId: string,
+    dto: CreateTechStackDto,
+  ) {
+    await this.ownership.assertProfileOwnership(profileId, authenticatedUserId);
+
     const exists = await this.prisma.techStack.findUnique({
       where: { profileId },
     });
 
     // Se já existe, faz update ao invés de erro
     if (exists) {
-      return this.update(profileId, dto);
+      return this.update(authenticatedUserId, profileId, dto);
     }
 
     return this.prisma.techStack.create({
@@ -56,7 +73,13 @@ export class TechstackService {
     });
   }
 
-  async update(profileId: string, dto: UpdateTechStackDto) {
+  async update(
+    authenticatedUserId: string,
+    profileId: string,
+    dto: UpdateTechStackDto,
+  ) {
+    await this.ownership.assertProfileOwnership(profileId, authenticatedUserId);
+
     return this.prisma.techStack.update({
       where: { profileId },
       data: {
@@ -80,7 +103,7 @@ export class TechstackService {
     });
   }
 
-  async deleteTechStackById(id: string) {
+  async deleteTechStackById(authenticatedUserId: string, id: string) {
     const techStack = await this.prisma.techStack.findUnique({
       where: { id },
     });
@@ -89,13 +112,23 @@ export class TechstackService {
       throw new NotFoundException(`TechStack with ID ${id} not found`);
     }
 
+    await this.ownership.assertProfileOwnership(
+      techStack.profileId,
+      authenticatedUserId,
+    );
+
     return this.prisma.techStack.delete({
       where: { id },
       include: { technologies: true },
     });
   }
 
-  async deleteTechStackByProfile(profileId: string) {
+  async deleteTechStackByProfile(
+    authenticatedUserId: string,
+    profileId: string,
+  ) {
+    await this.ownership.assertProfileOwnership(profileId, authenticatedUserId);
+
     const techStack = await this.prisma.techStack.findUnique({
       where: { profileId },
     });

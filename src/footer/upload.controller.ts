@@ -5,16 +5,19 @@ import {
   UseInterceptors,
   HttpStatus,
   HttpCode,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiConsumes, ApiBody, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('Upload')
 @Controller('upload')
 export class UploadController {
   @Post('resume')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Fazer upload do currículo (PDF)' })
   @ApiConsumes('multipart/form-data')
@@ -40,6 +43,9 @@ export class UploadController {
           callback(null, `resume-${uniqueSuffix}${ext}`);
         },
       }),
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
       fileFilter: (req, file, callback) => {
         if (!file.originalname.match(/\.(pdf|doc|docx)$/)) {
           return callback(

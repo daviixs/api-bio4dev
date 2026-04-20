@@ -1,16 +1,22 @@
 import 'dotenv/config';
 import helmet from 'helmet';
-import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import {
+  ClassSerializerInterceptor,
+  ValidationPipe,
+} from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { extname, join } from 'path';
 import { existsSync } from 'fs';
 import * as express from 'express';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const expressApp = app.getHttpAdapter().getInstance();
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   const allowedOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
     : [
@@ -22,7 +28,7 @@ async function bootstrap() {
       ];
 
   app.enableCors({
-    origin: allowedOrigins.includes('*') ? true : allowedOrigins,
+    origin: allowedOrigins,
     credentials: true,
   });
 
@@ -87,6 +93,10 @@ async function bootstrap() {
       forbidNonWhitelisted: true, // Lanca erro se propriedades extras forem enviadas
       transform: true, // Transforma payloads em instancias de DTO
     }),
+  );
+  app.useGlobalFilters(new PrismaExceptionFilter());
+  app.useGlobalInterceptors(
+    new ClassSerializerInterceptor(app.get(Reflector)),
   );
 
   // Use PORT from env, fallback to 3000 to avoid clashes with common local services

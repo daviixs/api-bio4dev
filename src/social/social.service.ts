@@ -5,20 +5,20 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
 import { CreateSocialDto, UpdateSocialDto } from 'src/dto/social.dto';
+import { ProfileOwnershipService } from 'src/security/profile-ownership.service';
 
 @Injectable()
 export class SocialService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ownership: ProfileOwnershipService,
+  ) {}
 
-  async create(data: CreateSocialDto) {
-    // Verifica se o perfil existe
-    const profile = await this.prisma.profile.findUnique({
-      where: { id: data.profileId },
-    });
-
-    if (!profile) {
-      throw new NotFoundException('Perfil não encontrado');
-    }
+  async create(authenticatedUserId: string, data: CreateSocialDto) {
+    await this.ownership.assertProfileOwnership(
+      data.profileId,
+      authenticatedUserId,
+    );
 
     // Verifica se já existe um link desta plataforma para este perfil
     const existingSocial = await this.prisma.social.findFirst({
@@ -47,8 +47,13 @@ export class SocialService {
     });
   }
 
-  async findAll() {
+  async findAll(authenticatedUserId: string) {
     return this.prisma.social.findMany({
+      where: {
+        profile: {
+          userId: authenticatedUserId,
+        },
+      },
       select: {
         id: true,
         profileId: true,
@@ -59,15 +64,8 @@ export class SocialService {
     });
   }
 
-  async findByProfile(profileId: string) {
-    // Verifica se o perfil existe
-    const profile = await this.prisma.profile.findUnique({
-      where: { id: profileId },
-    });
-
-    if (!profile) {
-      throw new NotFoundException('Perfil não encontrado');
-    }
+  async findByProfile(authenticatedUserId: string, profileId: string) {
+    await this.ownership.assertProfileOwnership(profileId, authenticatedUserId);
 
     return this.prisma.social.findMany({
       where: { profileId },
@@ -75,7 +73,7 @@ export class SocialService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(authenticatedUserId: string, id: string) {
     const social = await this.prisma.social.findUnique({
       where: { id },
     });
@@ -84,10 +82,19 @@ export class SocialService {
       throw new NotFoundException('Rede social não encontrada');
     }
 
+    await this.ownership.assertProfileOwnership(
+      social.profileId,
+      authenticatedUserId,
+    );
+
     return social;
   }
 
-  async update(id: string, data: UpdateSocialDto) {
+  async update(
+    authenticatedUserId: string,
+    id: string,
+    data: UpdateSocialDto,
+  ) {
     // Verifica se existe
     const social = await this.prisma.social.findUnique({
       where: { id },
@@ -96,6 +103,11 @@ export class SocialService {
     if (!social) {
       throw new NotFoundException('Rede social não encontrada');
     }
+
+    await this.ownership.assertProfileOwnership(
+      social.profileId,
+      authenticatedUserId,
+    );
 
     // Se estiver atualizando a plataforma, verifica se não há conflito
     if (data.plataforma && data.plataforma !== social.plataforma) {
@@ -120,7 +132,7 @@ export class SocialService {
     });
   }
 
-  async delete(id: string) {
+  async delete(authenticatedUserId: string, id: string) {
     // Verifica se existe
     const social = await this.prisma.social.findUnique({
       where: { id },
@@ -129,6 +141,11 @@ export class SocialService {
     if (!social) {
       throw new NotFoundException('Rede social não encontrada');
     }
+
+    await this.ownership.assertProfileOwnership(
+      social.profileId,
+      authenticatedUserId,
+    );
 
     await this.prisma.social.delete({
       where: { id },

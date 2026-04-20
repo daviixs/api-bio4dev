@@ -23,6 +23,8 @@ export class JwtStrategy
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       algorithms: ['RS256'],
+      issuer: process.env.JWT_ISSUER || 'https://api.bio4dev.com',
+      audience: process.env.JWT_AUDIENCE || 'https://api.bio4dev.com',
       secretOrKeyProvider: async (
         _request: any,
         _rawJwtToken: string,

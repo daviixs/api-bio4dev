@@ -4,14 +4,23 @@ import {
   CreateWorkExperienceDto,
   UpdateWorkExperienceDto,
 } from 'src/dto/work-experience.dto';
+import { ProfileOwnershipService } from 'src/security/profile-ownership.service';
 
 @Injectable()
 export class WorkexperienceService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ownership: ProfileOwnershipService,
+  ) {}
 
-  async createWorkExperience(data: CreateWorkExperienceDto) {
+  async createWorkExperience(
+    authenticatedUserId: string,
+    data: CreateWorkExperienceDto,
+  ) {
     const { profileId, technologies, responsibilities, ...workExperienceData } =
       data;
+
+    await this.ownership.assertProfileOwnership(profileId, authenticatedUserId);
 
     return this.prisma.workExperience.create({
       data: {
@@ -42,8 +51,13 @@ export class WorkexperienceService {
     });
   }
 
-  async findAll() {
+  async findAll(authenticatedUserId: string) {
     return this.prisma.workExperience.findMany({
+      where: {
+        profile: {
+          userId: authenticatedUserId,
+        },
+      },
       include: {
         technologies: true,
         responsibilities: {
@@ -54,7 +68,9 @@ export class WorkexperienceService {
     });
   }
 
-  async findByProfile(profileId: string) {
+  async findByProfile(authenticatedUserId: string, profileId: string) {
+    await this.ownership.assertProfileOwnership(profileId, authenticatedUserId);
+
     return this.prisma.workExperience.findMany({
       where: { profileId },
       include: {
@@ -67,7 +83,7 @@ export class WorkexperienceService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(authenticatedUserId: string, id: string) {
     const workExperience = await this.prisma.workExperience.findUnique({
       where: { id },
       include: {
@@ -82,11 +98,20 @@ export class WorkexperienceService {
       throw new NotFoundException(`WorkExperience com ID ${id} não encontrado`);
     }
 
+    await this.ownership.assertProfileOwnership(
+      workExperience.profileId,
+      authenticatedUserId,
+    );
+
     return workExperience;
   }
 
-  async updateWorkExperience(id: string, data: UpdateWorkExperienceDto) {
-    await this.findOne(id);
+  async updateWorkExperience(
+    authenticatedUserId: string,
+    id: string,
+    data: UpdateWorkExperienceDto,
+  ) {
+    await this.findOne(authenticatedUserId, id);
 
     const { technologies, responsibilities, ...workExperienceData } = data;
     if (technologies !== undefined) {
@@ -132,8 +157,8 @@ export class WorkexperienceService {
     });
   }
 
-  async deleteWorkExperience(id: string) {
-    await this.findOne(id);
+  async deleteWorkExperience(authenticatedUserId: string, id: string) {
+    await this.findOne(authenticatedUserId, id);
 
     // Delete related records first to avoid foreign key constraint violations
     await this.prisma.workTechnology.deleteMany({

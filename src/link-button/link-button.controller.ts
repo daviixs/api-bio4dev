@@ -8,6 +8,8 @@ import {
   Patch,
   Post,
   Put,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -23,8 +25,10 @@ import {
   UpdateLinkButtonDto,
 } from 'src/dto/link-button.dto';
 import { LinkButtonService } from './link-button.service';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('link-buttons')
+@UseGuards(JwtAuthGuard)
 @Controller('link-buttons')
 export class LinkButtonController {
   constructor(private readonly linkButtonService: LinkButtonService) {}
@@ -39,8 +43,8 @@ export class LinkButtonController {
     type: LinkButtonResponseDto,
   })
   @Post()
-  async create(@Body() data: CreateLinkButtonDto) {
-    return this.linkButtonService.create(data);
+  async create(@Request() req: any, @Body() data: CreateLinkButtonDto) {
+    return this.linkButtonService.create(req.user.userId, data);
   }
 
   @ApiOperation({
@@ -52,8 +56,8 @@ export class LinkButtonController {
     type: [LinkButtonResponseDto],
   })
   @Get()
-  async findAll() {
-    return this.linkButtonService.findAll();
+  async findAll(@Request() req: any) {
+    return this.linkButtonService.findAll(req.user.userId);
   }
 
   @ApiOperation({
@@ -67,9 +71,10 @@ export class LinkButtonController {
   })
   @Get('profile/:profileId')
   async findByProfileId(
+    @Request() req: any,
     @Param('profileId', new ParseUUIDPipe({ version: '4' })) profileId: string,
   ) {
-    return this.linkButtonService.findByProfileId(profileId);
+    return this.linkButtonService.findByProfileId(req.user.userId, profileId);
   }
 
   @ApiOperation({
@@ -82,8 +87,11 @@ export class LinkButtonController {
     type: LinkButtonResponseDto,
   })
   @Get(':id')
-  async findOne(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
-    return this.linkButtonService.findOne(id);
+  async findOne(
+    @Request() req: any,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
+    return this.linkButtonService.findOne(req.user.userId, id);
   }
 
   @ApiOperation({
@@ -98,10 +106,11 @@ export class LinkButtonController {
   })
   @Patch(':id')
   async update(
+    @Request() req: any,
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() data: UpdateLinkButtonDto,
   ) {
-    return this.linkButtonService.update(id, data);
+    return this.linkButtonService.update(req.user.userId, id, data);
   }
 
   @ApiOperation({
@@ -111,8 +120,11 @@ export class LinkButtonController {
   @ApiParam({ name: 'id', description: 'UUID do link button' })
   @ApiOkResponse({ description: 'Link button deletado com sucesso' })
   @Delete(':id')
-  async delete(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
-    return this.linkButtonService.delete(id);
+  async delete(
+    @Request() req: any,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
+    return this.linkButtonService.delete(req.user.userId, id);
   }
 
   @ApiOperation({
@@ -123,9 +135,13 @@ export class LinkButtonController {
   @ApiOkResponse({ description: 'Todos os link buttons deletados' })
   @Delete('profile/:profileId')
   async deleteAllByProfileId(
+    @Request() req: any,
     @Param('profileId', new ParseUUIDPipe({ version: '4' })) profileId: string,
   ) {
-    return this.linkButtonService.deleteAllByProfileId(profileId);
+    return this.linkButtonService.deleteAllByProfileId(
+      req.user.userId,
+      profileId,
+    );
   }
 
   @ApiOperation({
@@ -141,6 +157,7 @@ export class LinkButtonController {
   })
   @Put('profile/:profileId')
   async upsertMany(
+    @Request() req: any,
     @Param('profileId', new ParseUUIDPipe({ version: '4' })) profileId: string,
     @Body() buttons: Omit<CreateLinkButtonDto, 'profileId'>[],
   ) {
@@ -148,6 +165,10 @@ export class LinkButtonController {
       ...b,
       profileId,
     }));
-    return this.linkButtonService.upsertMany(profileId, buttonsWithProfileId);
+    return this.linkButtonService.upsertMany(
+      req.user.userId,
+      profileId,
+      buttonsWithProfileId,
+    );
   }
 }

@@ -78,16 +78,6 @@ export class UpdateUserDto {
   email?: string;
 
   @ApiPropertyOptional({
-    description: 'Senha do usuario',
-    example: 'N0v@Senh@',
-    minLength: 6,
-  })
-  @IsOptional()
-  @IsString({ message: 'Senha deve ser uma string' })
-  @MinLength(6, { message: 'Senha deve ter no minimo 6 caracteres' })
-  senha?: string;
-
-  @ApiPropertyOptional({
     description: 'Nome completo do usuario',
     example: 'Usuario Teste Atualizado',
     maxLength: 120,
@@ -96,15 +86,6 @@ export class UpdateUserDto {
   @IsString({ message: 'Nome deve ser uma string' })
   @MaxLength(120, { message: 'Nome deve ter no maximo 120 caracteres' })
   nome?: string;
-
-  @ApiPropertyOptional({
-    description: 'Papel do usuario',
-    enum: UserRole,
-    example: UserRole.PLATFORM_ADMIN,
-  })
-  @IsOptional()
-  @IsEnum(UserRole, { message: 'Role deve ser USER ou PLATFORM_ADMIN' })
-  role?: UserRole;
 
   @ApiPropertyOptional({
     description: 'Username do usuario',

@@ -1,9 +1,9 @@
 import {
   Injectable,
   UnauthorizedException,
-  ConflictException,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import {
@@ -86,7 +86,13 @@ export class UsersService {
     );
   }
 
-  async updateUser(id: string, dto: UpdateUserDto) {
+  async updateUser(
+    id: string,
+    dto: UpdateUserDto,
+    authenticatedUserId: string,
+  ) {
+    this.assertSelfAccess(id, authenticatedUserId);
+
     const data: any = {
       nome: dto.nome,
       username: dto.username,
@@ -98,9 +104,6 @@ export class UsersService {
       data.emailMasked = this.maskEmail(normalized);
     }
 
-    const prismaRole = this.toPrismaRole(dto.role);
-    if (prismaRole) data.role = prismaRole;
-
     const user = await this.prisma.user.update({
       where: { id },
       data,
@@ -111,7 +114,13 @@ export class UsersService {
     };
   }
 
-  async updatePreferences(id: string, dto: UpdatePreferencesDto) {
+  async updatePreferences(
+    id: string,
+    dto: UpdatePreferencesDto,
+    authenticatedUserId: string,
+  ) {
+    this.assertSelfAccess(id, authenticatedUserId);
+
     await this.prisma.user.update({
       where: { id },
       data: {
@@ -126,7 +135,9 @@ export class UsersService {
     return { message: 'Preferências atualizadas' };
   }
 
-  async enable2FA(id: string) {
+  async enable2FA(id: string, authenticatedUserId: string) {
+    this.assertSelfAccess(id, authenticatedUserId);
+
     await this.prisma.user.update({
       where: { id },
       data: { twoFactorEnabled: true },
@@ -134,7 +145,9 @@ export class UsersService {
     return { message: '2FA enabled (stub)' };
   }
 
-  async disable2FA(id: string) {
+  async disable2FA(id: string, authenticatedUserId: string) {
+    this.assertSelfAccess(id, authenticatedUserId);
+
     await this.prisma.user.update({
       where: { id },
       data: { twoFactorEnabled: false },
@@ -142,7 +155,9 @@ export class UsersService {
     return { message: '2FA disabled (stub)' };
   }
 
-  async findById(id: string) {
+  async findById(id: string, authenticatedUserId: string) {
+    this.assertSelfAccess(id, authenticatedUserId);
+
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('Usuário não encontrado');
     return this.toResponse(user);
@@ -166,18 +181,6 @@ export class UsersService {
     };
   }
 
-  private toPrismaRole(role?: UserRole): Role | undefined {
-    if (!role) return undefined;
-    switch (role) {
-      case UserRole.USER:
-        return Role.CLIENT;
-      case UserRole.PLATFORM_ADMIN:
-        return Role.ADMIN;
-      default:
-        return undefined;
-    }
-  }
-
   private toApiRole(role?: Role | null): UserRole {
     switch (role) {
       case Role.ADMIN:
@@ -199,5 +202,11 @@ export class UsersService {
     const maskedDomain =
       d.length <= 3 ? `${d[0] || '*'}**` : `${d[0]}***${d.slice(-1)}`;
     return `${maskedUser}@${maskedDomain}`;
+  }
+
+  private assertSelfAccess(targetUserId: string, authenticatedUserId: string) {
+    if (targetUserId !== authenticatedUserId) {
+      throw new ForbiddenException('Acesso negado');
+    }
   }
 }

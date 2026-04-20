@@ -8,6 +8,8 @@ import {
   Param,
   HttpCode,
   HttpStatus,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { WorkexperienceService } from './workexperience.service';
@@ -16,8 +18,10 @@ import {
   UpdateWorkExperienceDto,
   WorkExperienceResponseDto,
 } from 'src/dto/work-experience.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('Work Experience')
+@UseGuards(JwtAuthGuard)
 @Controller('workexperience')
 export class WorkexperinceController {
   constructor(private readonly workexperienceService: WorkexperienceService) {}
@@ -31,8 +35,8 @@ export class WorkexperinceController {
   })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 404, description: 'Profile não encontrado' })
-  async create(@Body() data: CreateWorkExperienceDto) {
-    return this.workexperienceService.createWorkExperience(data);
+  async create(@Request() req: any, @Body() data: CreateWorkExperienceDto) {
+    return this.workexperienceService.createWorkExperience(req.user.userId, data);
   }
 
   @Get()
@@ -42,8 +46,8 @@ export class WorkexperinceController {
     description: 'Lista de experiências retornada com sucesso',
     type: [WorkExperienceResponseDto],
   })
-  async findAll() {
-    return this.workexperienceService.findAll();
+  async findAll(@Request() req: any) {
+    return this.workexperienceService.findAll(req.user.userId);
   }
 
   @Get('profile/:profileId')
@@ -60,8 +64,8 @@ export class WorkexperinceController {
     description: 'Lista de experiências do profile',
     type: [WorkExperienceResponseDto],
   })
-  async findByProfile(@Param('profileId') profileId: string) {
-    return this.workexperienceService.findByProfile(profileId);
+  async findByProfile(@Request() req: any, @Param('profileId') profileId: string) {
+    return this.workexperienceService.findByProfile(req.user.userId, profileId);
   }
 
   @Get(':id')
@@ -77,8 +81,8 @@ export class WorkexperinceController {
     type: WorkExperienceResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Experiência não encontrada' })
-  async findOne(@Param('id') id: string) {
-    return this.workexperienceService.findOne(id);
+  async findOne(@Request() req: any, @Param('id') id: string) {
+    return this.workexperienceService.findOne(req.user.userId, id);
   }
 
   @Put(':id')
@@ -95,8 +99,16 @@ export class WorkexperinceController {
   })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 404, description: 'Experiência não encontrada' })
-  async update(@Param('id') id: string, @Body() data: UpdateWorkExperienceDto) {
-    return this.workexperienceService.updateWorkExperience(id, data);
+  async update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: UpdateWorkExperienceDto,
+  ) {
+    return this.workexperienceService.updateWorkExperience(
+      req.user.userId,
+      id,
+      data,
+    );
   }
 
   @Delete(':id')
@@ -112,7 +124,7 @@ export class WorkexperinceController {
     description: 'Experiência deletada com sucesso',
   })
   @ApiResponse({ status: 404, description: 'Experiência não encontrada' })
-  async delete(@Param('id') id: string) {
-    await this.workexperienceService.deleteWorkExperience(id);
+  async delete(@Request() req: any, @Param('id') id: string) {
+    await this.workexperienceService.deleteWorkExperience(req.user.userId, id);
   }
 }

@@ -27,29 +27,6 @@ export class ProfileService {
       .replace(/-{2,}/g, '-');
   }
 
-  async findAll() {
-    return this.prisma.profile.findMany({
-      select: {
-        id: true,
-        userId: true,
-        username: true,
-        slug: true,
-        bio: true,
-        avatarUrl: true,
-        theme: true,
-        mainColor: true,
-        templateType: true,
-        published: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-  }
-
   async create(authenticatedUserId: string, data: CreateProfileDto) {
     // ✅ VALIDAR: IDOR protection
     if (data.userId !== authenticatedUserId) {
@@ -178,8 +155,8 @@ export class ProfileService {
     });
   }
 
-  async findOne(id: string) {
-    return this.prisma.profile.findUnique({
+  async findOne(authenticatedUserId: string, id: string) {
+    const profile = await this.prisma.profile.findUnique({
       where: { id },
       select: {
         id: true,
@@ -197,6 +174,16 @@ export class ProfileService {
         updatedAt: true,
       },
     });
+
+    if (!profile) {
+      return null;
+    }
+
+    if (profile.userId !== authenticatedUserId) {
+      throw new ForbiddenException('Acesso negado');
+    }
+
+    return profile;
   }
 
   async findByUsername(username: string, previewToken?: string) {
@@ -270,7 +257,7 @@ export class ProfileService {
     return profile;
   }
 
-  async findCompleteById(id: string) {
+  async findCompleteById(authenticatedUserId: string, id: string) {
     const profile = await this.prisma.profile.findUnique({
       where: { id },
       include: {
@@ -307,6 +294,10 @@ export class ProfileService {
 
     if (!profile) {
       throw new NotFoundException(`Profile com ID "${id}" não encontrado`);
+    }
+
+    if (profile.userId !== authenticatedUserId) {
+      throw new ForbiddenException('Acesso negado');
     }
 
     return profile;
@@ -380,7 +371,11 @@ export class ProfileService {
 
   // ===== NOVOS MÉTODOS MULTI-PORTFOLIO =====
 
-  async findByUserId(userId: string) {
+  async findByUserId(authenticatedUserId: string, userId: string) {
+    if (authenticatedUserId !== userId) {
+      throw new ForbiddenException('Acesso negado');
+    }
+
     return this.prisma.profile.findMany({
       where: { userId },
       select: {
@@ -399,6 +394,26 @@ export class ProfileService {
         { isActive: 'desc' }, // Ativo primeiro
         { createdAt: 'desc' }, // Mais recente depois
       ],
+    });
+  }
+
+  async findAll(authenticatedUserId: string) {
+    return this.prisma.profile.findMany({
+      where: { userId: authenticatedUserId },
+      select: {
+        id: true,
+        slug: true,
+        username: true,
+        bio: true,
+        avatarUrl: true,
+        templateType: true,
+        published: true,
+        isActive: true,
+        userId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
     });
   }
 

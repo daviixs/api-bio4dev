@@ -5,6 +5,8 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -14,8 +16,10 @@ import {
 } from '@nestjs/swagger';
 import { LegendaDto, UpdateLegendaDto } from 'src/dto/legenda.dto';
 import { LegendaService } from './legenda.service';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('legenda')
+@UseGuards(JwtAuthGuard)
 @Controller('legenda')
 export class LegendaController {
   constructor(private readonly legendaService: LegendaService) {}
@@ -28,8 +32,8 @@ export class LegendaController {
   @ApiBody({ type: LegendaDto })
   @ApiCreatedResponse({ description: 'Legenda criada com sucesso' })
   @Post()
-  async create(@Body() data: LegendaDto) {
-    return this.legendaService.create(data);
+  async create(@Request() req: any, @Body() data: LegendaDto) {
+    return this.legendaService.create(req.user.userId, data);
   }
 
   @ApiOperation({
@@ -40,10 +44,11 @@ export class LegendaController {
   @ApiCreatedResponse({ description: 'Legenda atualizada com sucesso' })
   @Patch(':id')
   async updateLegenda(
+    @Request() req: any,
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() data: UpdateLegendaDto,
   ) {
-    return this.legendaService.updateLegenda(id, data);
+    return this.legendaService.updateLegenda(req.user.userId, id, data);
   }
 
   @ApiOperation({
@@ -53,7 +58,10 @@ export class LegendaController {
   })
   @ApiCreatedResponse({ description: 'Legenda obtida com sucesso' })
   @Post('by-profile/:profileId')
-  async getLegendaByProfileId(@Param('profileId') profileId: string) {
-    return this.legendaService.getLegendaByProfileId(profileId);
+  async getLegendaByProfileId(
+    @Request() req: any,
+    @Param('profileId') profileId: string,
+  ) {
+    return this.legendaService.getLegendaByProfileId(req.user.userId, profileId);
   }
 }

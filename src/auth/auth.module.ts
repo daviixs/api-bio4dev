@@ -16,7 +16,7 @@ import { RefreshTokenModule } from './refresh-token/refresh-token.module';
     JwtCustomModule,
     RefreshTokenModule,
     JwtModule.register({
-      secret: process.env.SECRETKEY ?? 'dev-secret',
+      secret: process.env.SECRETKEY,
       signOptions: {
         expiresIn: (process.env.EXPIRESIN ?? '1h') as any,
       },

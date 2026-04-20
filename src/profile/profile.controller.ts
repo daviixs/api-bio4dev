@@ -36,9 +36,10 @@ export class ProfileController {
 
   @ApiOperation({ summary: 'Listar todos os perfis' })
   @ApiResponse({ status: 200, description: 'Lista de perfis retornada' })
+  @UseGuards(JwtAuthGuard)
   @Get()
-  async findAll() {
-    return this.profileService.findAll();
+  async findAll(@Request() req: any) {
+    return this.profileService.findAll(req.user.userId);
   }
 
   @ApiOperation({ summary: 'Criar novo perfil' })
@@ -59,9 +60,10 @@ export class ProfileController {
   })
   @ApiResponse({ status: 200, description: 'Lista de portfolios retornada' })
   @ApiParam({ name: 'userId', description: 'ID do usuário' })
+  @UseGuards(JwtAuthGuard)
   @Get('user/:userId')
-  async getByUserId(@Param('userId') userId: string) {
-    return this.profileService.findByUserId(userId);
+  async getByUserId(@Request() req: any, @Param('userId') userId: string) {
+    return this.profileService.findByUserId(req.user.userId, userId);
   }
 
   @ApiOperation({ summary: 'Busca portfolio por slug (público)' })
@@ -137,9 +139,10 @@ export class ProfileController {
   @ApiResponse({ status: 200, description: 'Perfil completo retornado' })
   @ApiResponse({ status: 404, description: 'Perfil não encontrado' })
   @ApiParam({ name: 'id', description: 'ID do perfil' })
+  @UseGuards(JwtAuthGuard)
   @Get(':id/complete')
-  async findComplete(@Param('id') id: string) {
-    return this.profileService.findCompleteById(id);
+  async findComplete(@Request() req: any, @Param('id') id: string) {
+    return this.profileService.findCompleteById(req.user.userId, id);
   }
 
   // ===== ROTA GENÉRICA :id POR ÚLTIMO =====
@@ -148,9 +151,10 @@ export class ProfileController {
   @ApiResponse({ status: 200, description: 'Perfil encontrado' })
   @ApiResponse({ status: 404, description: 'Perfil não encontrado' })
   @ApiParam({ name: 'id', description: 'ID do perfil' })
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    const profile = await this.profileService.findOne(id);
+  async findOne(@Request() req: any, @Param('id') id: string) {
+    const profile = await this.profileService.findOne(req.user.userId, id);
     if (!profile) {
       throw new NotFoundException(`Perfil com ID "${id}" não encontrado`);
     }

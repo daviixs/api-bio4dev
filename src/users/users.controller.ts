@@ -42,8 +42,8 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get(':id')
-  public async getById(@Param('id') id: string) {
-    return this.usersService.findById(id);
+  public async getById(@Request() req: any, @Param('id') id: string) {
+    return this.usersService.findById(id, req.user.userId);
   }
 
   /**
@@ -64,18 +64,23 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Patch(':id')
-  public async updateUser(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.usersService.updateUser(id, dto);
+  public async updateUser(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+  ) {
+    return this.usersService.updateUser(id, dto, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Patch(':id/preferences')
   public async updatePreferences(
+    @Request() req: any,
     @Param('id') id: string,
     @Body() dto: UpdatePreferencesDto,
   ) {
-    return this.usersService.updatePreferences(id, dto);
+    return this.usersService.updatePreferences(id, dto, req.user.userId);
   }
 
   /**
@@ -96,14 +101,14 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Post(':id/2fa/enable')
-  public async enable2fa(@Param('id') id: string) {
-    return this.usersService.enable2FA(id);
+  public async enable2fa(@Request() req: any, @Param('id') id: string) {
+    return this.usersService.enable2FA(id, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Post(':id/2fa/disable')
-  public async disable2fa(@Param('id') id: string) {
-    return this.usersService.disable2FA(id);
+  public async disable2fa(@Request() req: any, @Param('id') id: string) {
+    return this.usersService.disable2FA(id, req.user.userId);
   }
 }

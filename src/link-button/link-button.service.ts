@@ -4,12 +4,21 @@ import {
   CreateLinkButtonDto,
   UpdateLinkButtonDto,
 } from 'src/dto/link-button.dto';
+import { ProfileOwnershipService } from 'src/security/profile-ownership.service';
 
 @Injectable()
 export class LinkButtonService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ownership: ProfileOwnershipService,
+  ) {}
 
-  async create(data: CreateLinkButtonDto) {
+  async create(authenticatedUserId: string, data: CreateLinkButtonDto) {
+    await this.ownership.assertProfileOwnership(
+      data.profileId,
+      authenticatedUserId,
+    );
+
     const linkButton = await this.prisma.linkButton.create({
       data: {
         profileId: data.profileId,
@@ -26,20 +35,27 @@ export class LinkButtonService {
     return { message: 'Link button criado com sucesso!', linkButton };
   }
 
-  async findAll() {
+  async findAll(authenticatedUserId: string) {
     return this.prisma.linkButton.findMany({
+      where: {
+        profile: {
+          userId: authenticatedUserId,
+        },
+      },
       orderBy: { ordem: 'asc' },
     });
   }
 
-  async findByProfileId(profileId: string) {
+  async findByProfileId(authenticatedUserId: string, profileId: string) {
+    await this.ownership.assertProfileOwnership(profileId, authenticatedUserId);
+
     return this.prisma.linkButton.findMany({
       where: { profileId },
       orderBy: { ordem: 'asc' },
     });
   }
 
-  async findOne(id: string) {
+  async findOne(authenticatedUserId: string, id: string) {
     const linkButton = await this.prisma.linkButton.findUnique({
       where: { id },
     });
@@ -48,10 +64,19 @@ export class LinkButtonService {
       throw new NotFoundException('Link button não encontrado');
     }
 
+    await this.ownership.assertProfileOwnership(
+      linkButton.profileId,
+      authenticatedUserId,
+    );
+
     return linkButton;
   }
 
-  async update(id: string, data: UpdateLinkButtonDto) {
+  async update(
+    authenticatedUserId: string,
+    id: string,
+    data: UpdateLinkButtonDto,
+  ) {
     const existing = await this.prisma.linkButton.findUnique({
       where: { id },
     });
@@ -59,6 +84,11 @@ export class LinkButtonService {
     if (!existing) {
       throw new NotFoundException('Link button não encontrado');
     }
+
+    await this.ownership.assertProfileOwnership(
+      existing.profileId,
+      authenticatedUserId,
+    );
 
     return this.prisma.linkButton.update({
       where: { id },
@@ -74,7 +104,7 @@ export class LinkButtonService {
     });
   }
 
-  async delete(id: string) {
+  async delete(authenticatedUserId: string, id: string) {
     const existing = await this.prisma.linkButton.findUnique({
       where: { id },
     });
@@ -83,6 +113,11 @@ export class LinkButtonService {
       throw new NotFoundException('Link button não encontrado');
     }
 
+    await this.ownership.assertProfileOwnership(
+      existing.profileId,
+      authenticatedUserId,
+    );
+
     await this.prisma.linkButton.delete({
       where: { id },
     });
@@ -90,7 +125,9 @@ export class LinkButtonService {
     return { message: 'Link button deletado com sucesso!' };
   }
 
-  async deleteAllByProfileId(profileId: string) {
+  async deleteAllByProfileId(authenticatedUserId: string, profileId: string) {
+    await this.ownership.assertProfileOwnership(profileId, authenticatedUserId);
+
     await this.prisma.linkButton.deleteMany({
       where: { profileId },
     });
@@ -98,7 +135,13 @@ export class LinkButtonService {
     return { message: 'Todos os link buttons do perfil foram deletados!' };
   }
 
-  async upsertMany(profileId: string, buttons: CreateLinkButtonDto[]) {
+  async upsertMany(
+    authenticatedUserId: string,
+    profileId: string,
+    buttons: CreateLinkButtonDto[],
+  ) {
+    await this.ownership.assertProfileOwnership(profileId, authenticatedUserId);
+
     // Delete all existing buttons for this profile
     await this.prisma.linkButton.deleteMany({
       where: { profileId },

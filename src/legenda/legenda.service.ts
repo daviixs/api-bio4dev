@@ -1,12 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
 import { LegendaDto, UpdateLegendaDto } from 'src/dto/legenda.dto';
+import { ProfileOwnershipService } from 'src/security/profile-ownership.service';
 
 @Injectable()
 export class LegendaService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ownership: ProfileOwnershipService,
+  ) {}
 
-  async create(data: LegendaDto) {
+  async create(authenticatedUserId: string, data: LegendaDto) {
+    await this.ownership.assertProfileOwnership(
+      data.profileId,
+      authenticatedUserId,
+    );
+
     // Verifica se já existe legenda para este profile
     const existingLegenda = await this.prisma.legenda.findFirst({
       where: { profileId: data.profileId },
@@ -47,7 +56,25 @@ export class LegendaService {
     return { message: 'Legenda criada com sucesso!', legenda };
   }
 
-  async updateLegenda(id: string, data: UpdateLegendaDto) {
+  async updateLegenda(
+    authenticatedUserId: string,
+    id: string,
+    data: UpdateLegendaDto,
+  ) {
+    const legenda = await this.prisma.legenda.findUnique({
+      where: { id },
+      select: { profileId: true },
+    });
+
+    if (!legenda) {
+      throw new NotFoundException('Legenda não encontrada');
+    }
+
+    await this.ownership.assertProfileOwnership(
+      legenda.profileId,
+      authenticatedUserId,
+    );
+
     return this.prisma.legenda.update({
       where: { id },
       data: {
@@ -61,7 +88,9 @@ export class LegendaService {
     });
   }
 
-  async getLegendaByProfileId(profileId: string) {
+  async getLegendaByProfileId(authenticatedUserId: string, profileId: string) {
+    await this.ownership.assertProfileOwnership(profileId, authenticatedUserId);
+
     return this.prisma.legenda.findFirst({
       where: { profileId },
     });

@@ -30,10 +30,14 @@ export class RefreshTokenService {
       });
 
       if (!storedToken) {
+        // Security best practice: a cryptographically valid refresh token that
+        // is missing from storage is treated as suspicious reuse/tampering.
+        await this.revokeAllUserTokens(userId);
         throw new UnauthorizedException('Refresh token inválido');
       }
 
       if (storedToken.revokedAt) {
+        await this.revokeAllUserTokens(userId);
         throw new UnauthorizedException('Refresh token revogado');
       }
 
@@ -44,7 +48,7 @@ export class RefreshTokenService {
 
       const isValid = await bcrypt.compare(refreshToken, storedToken.tokenHash);
       if (!isValid) {
-        await this.revokeToken(jti);
+        await this.revokeAllUserTokens(userId);
         throw new UnauthorizedException('Refresh token inválido');
       }
 

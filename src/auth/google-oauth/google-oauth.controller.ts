@@ -10,9 +10,10 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { GoogleOAuthService } from './google-oauth.service';
 import {
-  AuthTokensResponseDto,
+  WebAuthSessionResponseDto,
   OAuthCallbackQueryDto,
 } from './dto/google-oauth.dto';
 
@@ -51,6 +52,7 @@ export class GoogleOAuthController {
    * Returns the Google authorization URL for the frontend to redirect to
    */
   @Get('google')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @ApiOperation({ summary: 'Get Google OAuth authorization URL' })
   @ApiResponse({
     status: 200,
@@ -81,6 +83,7 @@ export class GoogleOAuthController {
    * Exchanges the authorization code for tokens and returns JWT tokens
    */
   @Get('google/callback')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({ summary: 'Handle Google OAuth callback' })
   @ApiQuery({
     name: 'code',
@@ -96,7 +99,7 @@ export class GoogleOAuthController {
   @ApiResponse({
     status: 200,
     description: 'Returns JWT tokens and user info',
-    type: AuthTokensResponseDto,
+    type: WebAuthSessionResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -106,7 +109,7 @@ export class GoogleOAuthController {
     @Query() query: OAuthCallbackQueryDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<AuthTokensResponseDto & { isNew: boolean }> {
+  ): Promise<WebAuthSessionResponseDto> {
     const { code, error, state } = query;
 
     // Handle OAuth errors from Google
@@ -143,10 +146,9 @@ export class GoogleOAuthController {
         path: '/auth',
       });
 
-      // Return response without the refresh token (it's in the cookie)
+      // Security best practice: keep refresh tokens cookie-only in browser flows.
       return {
         accessToken: result.accessToken,
-        refreshToken: result.refreshToken, // mobile clients may use it
         user: result.user,
         isNew: result.isNew,
       };

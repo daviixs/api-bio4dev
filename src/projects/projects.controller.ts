@@ -7,6 +7,8 @@ import {
   Post,
   Delete,
   Query,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -22,8 +24,10 @@ import {
   UpdateProjetoDto,
   ProjetoResponseDto,
 } from 'src/dto/projects.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('projects')
+@UseGuards(JwtAuthGuard)
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
@@ -38,8 +42,8 @@ export class ProjectsController {
     type: ProjetoResponseDto,
   })
   @Post()
-  async create(@Body() data: CreateProjetoDto) {
-    return this.projectsService.CreateProject(data);
+  async create(@Request() req: any, @Body() data: CreateProjetoDto) {
+    return this.projectsService.CreateProject(req.user.userId, data);
   }
 
   @ApiOperation({
@@ -52,8 +56,8 @@ export class ProjectsController {
     type: [ProjetoResponseDto],
   })
   @Get()
-  async findAll(@Query('profileId') profileId?: string) {
-    return this.projectsService.GetAllProjects(profileId);
+  async findAll(@Request() req: any, @Query('profileId') profileId?: string) {
+    return this.projectsService.GetAllProjects(req.user.userId, profileId);
   }
 
   @ApiOperation({
@@ -70,8 +74,8 @@ export class ProjectsController {
     type: [ProjetoResponseDto],
   })
   @Get('profile/:profileId')
-  async findByProfileId(@Param('profileId') profileId: string) {
-    return this.projectsService.GetAllProjects(profileId);
+  async findByProfileId(@Request() req: any, @Param('profileId') profileId: string) {
+    return this.projectsService.GetAllProjects(req.user.userId, profileId);
   }
 
   @ApiOperation({
@@ -85,8 +89,12 @@ export class ProjectsController {
     type: ProjetoResponseDto,
   })
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() data: UpdateProjetoDto) {
-    return this.projectsService.UpdateProject(id, data);
+  async update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: UpdateProjetoDto,
+  ) {
+    return this.projectsService.UpdateProject(req.user.userId, id, data);
   }
 
   @ApiOperation({
@@ -98,7 +106,7 @@ export class ProjectsController {
     description: 'Projeto deletado com sucesso',
   })
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    return this.projectsService.DeleteProject(id);
+  async remove(@Request() req: any, @Param('id') id: string) {
+    return this.projectsService.DeleteProject(req.user.userId, id);
   }
 }

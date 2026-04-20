@@ -8,6 +8,8 @@ import {
   Param,
   HttpCode,
   HttpStatus,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { FooterService } from './footer.service';
@@ -16,8 +18,10 @@ import {
   UpdateFooterDto,
   FooterResponseDto,
 } from 'src/dto/footer.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('Footer')
+@UseGuards(JwtAuthGuard)
 @Controller('footer')
 export class FooterController {
   constructor(private readonly footerService: FooterService) {}
@@ -34,8 +38,8 @@ export class FooterController {
     status: 409,
     description: 'Footer já existe para este profile',
   })
-  async create(@Body() data: CreateFooterDto) {
-    return this.footerService.create(data);
+  async create(@Request() req: any, @Body() data: CreateFooterDto) {
+    return this.footerService.create(req.user.userId, data);
   }
 
   @Get()
@@ -45,8 +49,8 @@ export class FooterController {
     description: 'Lista de footers retornada com sucesso',
     type: [FooterResponseDto],
   })
-  async findAll() {
-    return this.footerService.findAll();
+  async findAll(@Request() req: any) {
+    return this.footerService.findAll(req.user.userId);
   }
 
   @Get('profile/:profileId')
@@ -62,8 +66,8 @@ export class FooterController {
     type: FooterResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Footer não encontrado' })
-  async findByProfile(@Param('profileId') profileId: string) {
-    return this.footerService.findByProfile(profileId);
+  async findByProfile(@Request() req: any, @Param('profileId') profileId: string) {
+    return this.footerService.findByProfile(req.user.userId, profileId);
   }
 
   @Get(':id')
@@ -79,8 +83,8 @@ export class FooterController {
     type: FooterResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Footer não encontrado' })
-  async findOne(@Param('id') id: string) {
-    return this.footerService.findOne(id);
+  async findOne(@Request() req: any, @Param('id') id: string) {
+    return this.footerService.findOne(req.user.userId, id);
   }
 
   @Put(':id')
@@ -97,8 +101,12 @@ export class FooterController {
   })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 404, description: 'Footer não encontrado' })
-  async update(@Param('id') id: string, @Body() data: UpdateFooterDto) {
-    return this.footerService.update(id, data);
+  async update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: UpdateFooterDto,
+  ) {
+    return this.footerService.update(req.user.userId, id, data);
   }
 
   @Put('profile/:profileId')
@@ -116,10 +124,11 @@ export class FooterController {
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 404, description: 'Footer não encontrado' })
   async updateByProfile(
+    @Request() req: any,
     @Param('profileId') profileId: string,
     @Body() data: UpdateFooterDto,
   ) {
-    return this.footerService.updateByProfile(profileId, data);
+    return this.footerService.updateByProfile(req.user.userId, profileId, data);
   }
 
   @Delete(':id')
@@ -135,8 +144,8 @@ export class FooterController {
     description: 'Footer deletado com sucesso',
   })
   @ApiResponse({ status: 404, description: 'Footer não encontrado' })
-  async delete(@Param('id') id: string) {
-    await this.footerService.delete(id);
+  async delete(@Request() req: any, @Param('id') id: string) {
+    await this.footerService.delete(req.user.userId, id);
   }
 
   @Delete('profile/:profileId')
@@ -152,7 +161,10 @@ export class FooterController {
     description: 'Footer deletado com sucesso',
   })
   @ApiResponse({ status: 404, description: 'Footer não encontrado' })
-  async deleteByProfile(@Param('profileId') profileId: string) {
-    await this.footerService.deleteByProfile(profileId);
+  async deleteByProfile(
+    @Request() req: any,
+    @Param('profileId') profileId: string,
+  ) {
+    await this.footerService.deleteByProfile(req.user.userId, profileId);
   }
 }

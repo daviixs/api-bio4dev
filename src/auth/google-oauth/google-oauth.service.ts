@@ -1,6 +1,5 @@
 import {
   Injectable,
-  ConflictException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
@@ -9,7 +8,7 @@ import { OAuth2Client } from 'google-auth-library';
 import * as bcrypt from 'bcrypt';
 import {
   GoogleProfileDto,
-  AuthTokensResponseDto,
+  IssuedAuthTokensResponseDto,
 } from './dto/google-oauth.dto';
 import { createHmac } from 'crypto';
 import { randomBytes } from 'crypto';
@@ -116,11 +115,24 @@ export class GoogleOAuthService {
         throw new UnauthorizedException('Invalid Google ID token');
       }
 
+      const googleId = payload.sub?.trim();
+      const email = this.normalizeEmail(payload.email || '');
+      const name = this.normalizeDisplayName(
+        payload.name,
+        payload.email || '',
+      );
+      const picture = this.normalizeAvatarUrl(payload.picture);
+
+      if (!googleId || !email) {
+        throw new UnauthorizedException('Invalid Google profile payload');
+      }
+
       return {
-        googleId: payload.sub,
-        email: payload.email || '',
-        name: payload.name || payload.email?.split('@')[0] || 'User',
-        picture: payload.picture,
+        googleId,
+        email,
+        emailVerified: payload.email_verified === true,
+        name,
+        picture,
       };
     } catch (error) {
       console.error('Error verifying Google ID token:', error);
@@ -134,9 +146,8 @@ export class GoogleOAuthService {
   async findOrCreateUser(
     googleProfile: GoogleProfileDto,
   ): Promise<{ user: any; isNew: boolean }> {
-    const { googleId, email, name, picture } = googleProfile;
-
-    const normalizedEmail = this.normalizeEmail(email);
+    const { googleId, email, emailVerified, name, picture } = googleProfile;
+    const normalizedEmail = email;
     const emailIndex = this.hmacEmail(normalizedEmail);
 
     // First, try to find by Google ID
@@ -174,6 +185,12 @@ export class GoogleOAuthService {
       }
 
       return { user, isNew: false };
+    }
+
+    if (!emailVerified) {
+      throw new UnauthorizedException(
+        'Google account email must be verified before sign-in',
+      );
     }
 
     // Check if email already exists (user registered with different method)
@@ -216,7 +233,7 @@ export class GoogleOAuthService {
    */
   async generateAuthTokens(
     user: any,
-  ): Promise<AuthTokensResponseDto & { isNew: boolean }> {
+  ): Promise<IssuedAuthTokensResponseDto> {
     // Generate access token
     const { token: accessToken, jti: accessJti } =
       await this.jwtService.generateAccessToken(
@@ -269,7 +286,7 @@ export class GoogleOAuthService {
    */
   async handleOAuthCallback(
     code: string,
-  ): Promise<AuthTokensResponseDto & { isNew: boolean }> {
+  ): Promise<IssuedAuthTokensResponseDto> {
     // Exchange code for tokens
     const { idToken } = await this.exchangeCodeForTokens(code);
 
@@ -308,5 +325,27 @@ export class GoogleOAuthService {
     const maskedDomain =
       d.length <= 3 ? `${d[0] || '*'}**` : `${d[0]}***${d.slice(-1)}`;
     return `${maskedUser}@${maskedDomain}`;
+  }
+
+  private normalizeDisplayName(name?: string, email?: string): string {
+    const fallback = email?.split('@')[0] || 'User';
+    const normalized = (name || fallback).trim();
+    return normalized.slice(0, 120) || 'User';
+  }
+
+  private normalizeAvatarUrl(picture?: string): string | undefined {
+    if (!picture) {
+      return undefined;
+    }
+
+    try {
+      const url = new URL(picture);
+      if (url.protocol !== 'https:') {
+        return undefined;
+      }
+      return url.toString();
+    } catch {
+      return undefined;
+    }
   }
 }

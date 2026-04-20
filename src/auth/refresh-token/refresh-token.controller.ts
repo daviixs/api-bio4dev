@@ -8,6 +8,7 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { RefreshTokenService } from './refresh-token.service';
 
 class RefreshDto {
@@ -19,6 +20,7 @@ export class RefreshTokenController {
   constructor(private readonly refreshTokenService: RefreshTokenService) {}
 
   @Post('refresh')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async refresh(
     @Body() dto: RefreshDto,

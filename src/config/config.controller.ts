@@ -1,4 +1,12 @@
-import { Body, Controller, Param, Post, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Param,
+  Post,
+  Patch,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBody,
   ApiCreatedResponse,
@@ -7,8 +15,10 @@ import {
 } from '@nestjs/swagger';
 import { ConfigService } from './config.service';
 import { ConfigDto, UpdateConfigDto } from 'src/dto/config.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('config')
+@UseGuards(JwtAuthGuard)
 @Controller('config')
 export class ConfigController {
   constructor(private readonly configService: ConfigService) {}
@@ -21,8 +31,8 @@ export class ConfigController {
   @ApiBody({ type: ConfigDto })
   @ApiCreatedResponse({ description: 'Configuracao criada com sucesso' })
   @Post()
-  async create(@Body() data: ConfigDto) {
-    return this.configService.create(data);
+  async create(@Request() req: any, @Body() data: ConfigDto) {
+    return this.configService.create(req.user.userId, data);
   }
 
   @ApiOperation({
@@ -32,8 +42,12 @@ export class ConfigController {
   @ApiBody({ type: UpdateConfigDto })
   @ApiCreatedResponse({ description: 'Configuracao atualizada com sucesso' })
   @Patch(':id')
-  async updateConfig(@Param('id') id: string, @Body() data: UpdateConfigDto) {
-    return this.configService.updateConfig(id, data);
+  async updateConfig(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: UpdateConfigDto,
+  ) {
+    return this.configService.updateConfig(req.user.userId, id, data);
   }
 
   @ApiOperation({
@@ -42,7 +56,10 @@ export class ConfigController {
   })
   @ApiCreatedResponse({ description: 'Configuracao obtida com sucesso' })
   @Post('by-profile/:profileId')
-  async getConfigByProfileId(@Param('profileId') profileId: string) {
-    return this.configService.getConfigByProfileId(profileId);
+  async getConfigByProfileId(
+    @Request() req: any,
+    @Param('profileId') profileId: string,
+  ) {
+    return this.configService.getConfigByProfileId(req.user.userId, profileId);
   }
 }
