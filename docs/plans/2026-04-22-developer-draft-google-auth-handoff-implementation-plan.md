@@ -112,9 +112,9 @@
 1. Guest draft final CTA opens the Google auth gate.
 2. Gate CTA redirects to Google.
 3. Successful callback creates profile from draft.
-3. Authenticated user final CTA saves directly.
-4. Canceled login keeps draft available.
-5. Frontend build passes.
+4. Authenticated user final CTA saves directly.
+5. Canceled login keeps draft available.
+6. Frontend build passes.
 
 ### Done when
 

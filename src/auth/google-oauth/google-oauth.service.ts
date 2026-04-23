@@ -95,9 +95,9 @@ export class GoogleOAuthService {
       redirect_uri: this.redirectUri,
       ...(options.codeChallenge
         ? {
-          code_challenge: options.codeChallenge,
-          code_challenge_method: CodeChallengeMethod.S256,
-        }
+            code_challenge: options.codeChallenge,
+            code_challenge_method: CodeChallengeMethod.S256,
+          }
         : {}),
     });
   }

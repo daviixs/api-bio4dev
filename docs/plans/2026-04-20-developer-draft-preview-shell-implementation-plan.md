@@ -114,4 +114,3 @@
 ### Done when
 
 - `npm run build` passes and the toolbar is visually aligned with `TemplatePreview`.
-

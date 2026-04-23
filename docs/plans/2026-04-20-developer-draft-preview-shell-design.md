@@ -130,4 +130,3 @@ Manual checks:
 5. clicar CTA primário guest e iniciar auth
 6. autenticar e finalizar draft
 7. abrir draft autenticado e validar CTA primário em estado de salvar
-
