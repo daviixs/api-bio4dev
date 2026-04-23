@@ -3,6 +3,43 @@ import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { GoogleOAuthService } from './google-oauth.service';
+import { appendFileSync } from 'fs';
+
+const OAUTH_DEBUG_LOG_PATH = '/tmp/bio4dev-google-oauth-debug.log';
+
+function debugOAuthController(stage: string, details?: Record<string, unknown>) {
+  if (process.env.NODE_ENV === 'production') {
+    return;
+  }
+
+  try {
+    appendFileSync(
+      OAUTH_DEBUG_LOG_PATH,
+      `${JSON.stringify({ at: new Date().toISOString(), stage, ...details })}\n`,
+    );
+  } catch (error) {
+    console.error('Failed to write OAuth controller debug log:', error);
+  }
+}
+
+function getErrorDetails(error: unknown) {
+  if (error instanceof Error) {
+    const maybeApiError = error as Error & {
+      code?: string;
+      response?: { status?: number; data?: unknown };
+    };
+
+    return {
+      name: error.name,
+      message: error.message,
+      code: maybeApiError.code,
+      status: maybeApiError.response?.status,
+      data: maybeApiError.response?.data,
+    };
+  }
+
+  return { error };
+}
 
 @ApiTags('auth')
 @Controller('auth')
@@ -53,6 +90,15 @@ export class GoogleOAuthController {
     @Query('state') state: string | undefined,
     @Res() res: Response,
   ): Promise<void> {
+    debugOAuthController('controller:callback:start', {
+      hasCode: Boolean(code),
+      hasError: Boolean(error),
+      hasState: Boolean(state),
+      codeLength: code?.length ?? 0,
+      stateLength: state?.length ?? 0,
+      providerError: error,
+    });
+
     if (error) {
       res.redirect(
         this.googleOAuthService.buildFrontendCallbackUrl(
@@ -75,6 +121,7 @@ export class GoogleOAuthController {
 
     const handoff = this.googleOAuthService.verifyOAuthState(state);
     if (!handoff) {
+      debugOAuthController('controller:callback:invalid-state');
       res.redirect(
         this.googleOAuthService.buildFrontendCallbackUrl(
           'error',
@@ -90,6 +137,11 @@ export class GoogleOAuthController {
         handoff.codeVerifier,
       );
 
+      debugOAuthController('controller:callback:success', {
+        userId: result.user.id,
+        isNew: result.isNew,
+      });
+
       res.cookie('refresh_token', result.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -100,6 +152,10 @@ export class GoogleOAuthController {
 
       res.redirect(this.googleOAuthService.buildFrontendCallbackUrl('success'));
     } catch (err) {
+      debugOAuthController(
+        'controller:callback:error',
+        getErrorDetails(err),
+      );
       console.error('OAuth callback error:', err);
       res.redirect(
         this.googleOAuthService.buildFrontendCallbackUrl(

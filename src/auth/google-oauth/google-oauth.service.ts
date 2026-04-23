@@ -8,6 +8,7 @@ import {
   IssuedAuthTokensResponseDto,
 } from './dto/google-oauth.dto';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
+import { appendFileSync } from 'fs';
 
 type OAuthHandoffPayload = {
   version: 1;
@@ -20,6 +21,49 @@ type VerifiedOAuthHandoffPayload = OAuthHandoffPayload & {
 };
 
 type FrontendCallbackStatus = 'success' | 'error';
+const OAUTH_DEBUG_LOG_PATH = '/tmp/bio4dev-google-oauth-debug.log';
+
+function debugOAuth(stage: string, details?: Record<string, unknown>) {
+  if (process.env.NODE_ENV === 'production') {
+    return;
+  }
+
+  const payload = {
+    at: new Date().toISOString(),
+    stage,
+    ...details,
+  };
+
+  try {
+    appendFileSync(OAUTH_DEBUG_LOG_PATH, `${JSON.stringify(payload)}\n`);
+  } catch (error) {
+    console.error('Failed to write OAuth debug log:', error);
+  }
+}
+
+function getErrorDetails(error: unknown) {
+  if (error instanceof Error) {
+    const maybeApiError = error as Error & {
+      code?: string;
+      response?: {
+        status?: number;
+        data?: unknown;
+      };
+      errors?: unknown;
+    };
+
+    return {
+      name: error.name,
+      message: error.message,
+      code: maybeApiError.code,
+      status: maybeApiError.response?.status,
+      data: maybeApiError.response?.data,
+      errors: maybeApiError.errors,
+    };
+  }
+
+  return { error };
+}
 
 @Injectable()
 export class GoogleOAuthService {
@@ -109,11 +153,26 @@ export class GoogleOAuthService {
     code: string,
     codeVerifier?: string,
   ): Promise<{ idToken: string; accessToken: string }> {
+    debugOAuth('exchangeCodeForTokens:start', {
+      hasCode: Boolean(code),
+      codeLength: code?.length ?? 0,
+      hasCodeVerifier: Boolean(codeVerifier),
+      codeVerifierLength: codeVerifier?.length ?? 0,
+      redirectUri: this.redirectUri,
+      clientIdPrefix: this.clientId.slice(0, 12),
+    });
     try {
       const { tokens } = await this.oauth2Client.getToken({
         code,
         redirect_uri: this.redirectUri,
         codeVerifier,
+      });
+
+      debugOAuth('exchangeCodeForTokens:success', {
+        hasIdToken: Boolean(tokens.id_token),
+        hasAccessToken: Boolean(tokens.access_token),
+        scope: tokens.scope,
+        tokenType: tokens.token_type,
       });
 
       if (!tokens.id_token) {
@@ -125,6 +184,7 @@ export class GoogleOAuthService {
         accessToken: tokens.access_token || '',
       };
     } catch (error) {
+      debugOAuth('exchangeCodeForTokens:error', getErrorDetails(error));
       console.error('Error exchanging code for tokens:', error);
       throw new UnauthorizedException('Failed to exchange authorization code');
     }
@@ -134,6 +194,11 @@ export class GoogleOAuthService {
    * Verify Google ID token and extract user profile
    */
   async verifyGoogleIdToken(idToken: string): Promise<GoogleProfileDto> {
+    debugOAuth('verifyGoogleIdToken:start', {
+      hasIdToken: Boolean(idToken),
+      idTokenLength: idToken?.length ?? 0,
+      clientIdPrefix: this.clientId.slice(0, 12),
+    });
     try {
       const ticket = await this.oauth2Client.verifyIdToken({
         idToken,
@@ -154,6 +219,12 @@ export class GoogleOAuthService {
         throw new UnauthorizedException('Invalid Google profile payload');
       }
 
+      debugOAuth('verifyGoogleIdToken:success', {
+        googleId,
+        email,
+        emailVerified: payload.email_verified === true,
+      });
+
       return {
         googleId,
         email,
@@ -162,6 +233,7 @@ export class GoogleOAuthService {
         picture,
       };
     } catch (error) {
+      debugOAuth('verifyGoogleIdToken:error', getErrorDetails(error));
       console.error('Error verifying Google ID token:', error);
       throw new UnauthorizedException('Failed to verify Google ID token');
     }
@@ -173,6 +245,11 @@ export class GoogleOAuthService {
   async findOrCreateUser(
     googleProfile: GoogleProfileDto,
   ): Promise<{ user: any; isNew: boolean }> {
+    debugOAuth('findOrCreateUser:start', {
+      googleId: googleProfile.googleId,
+      email: googleProfile.email,
+      emailVerified: googleProfile.emailVerified,
+    });
     const { googleId, email, emailVerified, name, picture } = googleProfile;
     const normalizedEmail = email;
     const emailIndex = this.hmacEmail(normalizedEmail);
@@ -211,6 +288,9 @@ export class GoogleOAuthService {
         });
       }
 
+      debugOAuth('findOrCreateUser:existing-google-user', {
+        userId: user.id,
+      });
       return { user, isNew: false };
     }
 
@@ -234,6 +314,9 @@ export class GoogleOAuthService {
           avatar: picture || existingEmailUser.avatar,
         },
       });
+      debugOAuth('findOrCreateUser:linked-existing-email-user', {
+        userId: user.id,
+      });
       return { user, isNew: false };
     }
 
@@ -252,6 +335,9 @@ export class GoogleOAuthService {
       },
     });
 
+    debugOAuth('findOrCreateUser:created-new-user', {
+      userId: user.id,
+    });
     return { user, isNew: true };
   }
 
@@ -259,6 +345,11 @@ export class GoogleOAuthService {
    * Generate access and refresh tokens for a user
    */
   async generateAuthTokens(user: any): Promise<IssuedAuthTokensResponseDto> {
+    debugOAuth('generateAuthTokens:start', {
+      userId: user.id,
+      hasMaskedEmail: Boolean(user.emailMasked),
+      isNew: Boolean(user.isNew),
+    });
     // Generate access token
     const { token: accessToken, jti: accessJti } =
       await this.jwtService.generateAccessToken(
@@ -292,6 +383,12 @@ export class GoogleOAuthService {
       data: { jti: accessJti },
     });
 
+    debugOAuth('generateAuthTokens:success', {
+      userId: user.id,
+      accessJti,
+      refreshJti,
+    });
+
     return {
       accessToken,
       refreshToken,
@@ -313,6 +410,11 @@ export class GoogleOAuthService {
     code: string,
     codeVerifier?: string,
   ): Promise<IssuedAuthTokensResponseDto> {
+    debugOAuth('handleOAuthCallback:start', {
+      hasCode: Boolean(code),
+      codeLength: code?.length ?? 0,
+      hasCodeVerifier: Boolean(codeVerifier),
+    });
     // Exchange code for tokens
     const { idToken } = await this.exchangeCodeForTokens(code, codeVerifier);
 
@@ -324,6 +426,11 @@ export class GoogleOAuthService {
 
     // Generate auth tokens
     const tokens = await this.generateAuthTokens({ ...user, isNew });
+
+    debugOAuth('handleOAuthCallback:success', {
+      userId: tokens.user.id,
+      isNew: tokens.isNew,
+    });
 
     return tokens;
   }
@@ -353,12 +460,18 @@ export class GoogleOAuthService {
   verifyOAuthState(
     state: string | undefined,
   ): VerifiedOAuthHandoffPayload | null {
+    debugOAuth('verifyOAuthState:start', {
+      hasState: Boolean(state),
+      stateLength: state?.length ?? 0,
+    });
     if (!state) {
+      debugOAuth('verifyOAuthState:missing-state');
       return null;
     }
 
     const [encodedPayload, signature] = state.split('.');
     if (!encodedPayload || !signature) {
+      debugOAuth('verifyOAuthState:invalid-format');
       return null;
     }
 
@@ -367,10 +480,12 @@ export class GoogleOAuthService {
     const expectedSignatureBuffer = Buffer.from(expectedSignature, 'utf8');
 
     if (actualSignatureBuffer.length !== expectedSignatureBuffer.length) {
+      debugOAuth('verifyOAuthState:signature-length-mismatch');
       return null;
     }
 
     if (!timingSafeEqual(actualSignatureBuffer, expectedSignatureBuffer)) {
+      debugOAuth('verifyOAuthState:signature-mismatch');
       return null;
     }
 
@@ -384,17 +499,26 @@ export class GoogleOAuthService {
         typeof parsed.nonce !== 'string' ||
         typeof parsed.issuedAt !== 'number'
       ) {
+        debugOAuth('verifyOAuthState:invalid-payload-shape');
         return null;
       }
 
       if (!/^[a-f0-9]{48}$/i.test(parsed.nonce)) {
+        debugOAuth('verifyOAuthState:invalid-nonce');
         return null;
       }
 
       if (Date.now() - parsed.issuedAt > this.oauthHandoffTtlMs) {
+        debugOAuth('verifyOAuthState:expired', {
+          ageMs: Date.now() - parsed.issuedAt,
+          ttlMs: this.oauthHandoffTtlMs,
+        });
         return null;
       }
 
+      debugOAuth('verifyOAuthState:success', {
+        issuedAt: parsed.issuedAt,
+      });
       return {
         version: 1,
         nonce: parsed.nonce,
@@ -406,6 +530,7 @@ export class GoogleOAuthService {
         }),
       };
     } catch {
+      debugOAuth('verifyOAuthState:parse-error');
       return null;
     }
   }
