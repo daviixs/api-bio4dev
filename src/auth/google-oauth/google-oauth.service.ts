@@ -7,12 +7,16 @@ import {
   GoogleProfileDto,
   IssuedAuthTokensResponseDto,
 } from './dto/google-oauth.dto';
-import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 
 type OAuthHandoffPayload = {
-  state: string;
-  codeVerifier: string;
+  version: 1;
+  nonce: string;
   issuedAt: number;
+};
+
+type VerifiedOAuthHandoffPayload = OAuthHandoffPayload & {
+  codeVerifier: string;
 };
 
 type FrontendCallbackStatus = 'success' | 'error';
@@ -26,7 +30,7 @@ export class GoogleOAuthService {
   private frontendRedirectUri: string;
   private emailHmacKey: string;
   private bcryptRounds: number;
-  private oauthCookieSecret: string;
+  private oauthStateSecret: string;
   private readonly oauthHandoffTtlMs = 10 * 60 * 1000;
 
   constructor(
@@ -43,7 +47,7 @@ export class GoogleOAuthService {
       'http://localhost:4000/auth/callback/google';
     this.emailHmacKey = process.env.EMAIL_HMAC_KEY || '';
     this.bcryptRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
-    this.oauthCookieSecret =
+    this.oauthStateSecret =
       process.env.GOOGLE_OAUTH_COOKIE_SECRET ||
       this.emailHmacKey ||
       process.env.JWT_SECRET ||
@@ -330,31 +334,30 @@ export class GoogleOAuthService {
   async createGoogleAuthRedirect(): Promise<{
     url: string;
     state: string;
-    handoffCookieValue: string;
   }> {
-    const state = this.generateState();
-    const { codeVerifier, codeChallenge } =
-      await this.oauth2Client.generateCodeVerifierAsync();
-    const handoffCookieValue = this.signOAuthHandoff({
-      state,
-      codeVerifier,
+    const handoff = {
+      version: 1 as const,
+      nonce: this.generateNonce(),
       issuedAt: Date.now(),
-    });
+    };
+    const state = this.signOAuthHandoff(handoff);
+    const codeVerifier = this.createCodeVerifier(handoff);
+    const codeChallenge = this.createCodeChallenge(codeVerifier);
     const url = this.getAuthorizationUrl({
       state,
       codeChallenge,
     });
-    return { url, state, handoffCookieValue };
+    return { url, state };
   }
 
-  verifyOAuthHandoffCookie(
-    cookieValue: string | undefined,
-  ): OAuthHandoffPayload | null {
-    if (!cookieValue) {
+  verifyOAuthState(
+    state: string | undefined,
+  ): VerifiedOAuthHandoffPayload | null {
+    if (!state) {
       return null;
     }
 
-    const [encodedPayload, signature] = cookieValue.split('.');
+    const [encodedPayload, signature] = state.split('.');
     if (!encodedPayload || !signature) {
       return null;
     }
@@ -377,10 +380,14 @@ export class GoogleOAuthService {
       ) as Partial<OAuthHandoffPayload>;
 
       if (
-        typeof parsed.state !== 'string' ||
-        typeof parsed.codeVerifier !== 'string' ||
+        parsed.version !== 1 ||
+        typeof parsed.nonce !== 'string' ||
         typeof parsed.issuedAt !== 'number'
       ) {
+        return null;
+      }
+
+      if (!/^[a-f0-9]{48}$/i.test(parsed.nonce)) {
         return null;
       }
 
@@ -389,9 +396,14 @@ export class GoogleOAuthService {
       }
 
       return {
-        state: parsed.state,
-        codeVerifier: parsed.codeVerifier,
+        version: 1,
+        nonce: parsed.nonce,
         issuedAt: parsed.issuedAt,
+        codeVerifier: this.createCodeVerifier({
+          version: 1,
+          nonce: parsed.nonce,
+          issuedAt: parsed.issuedAt,
+        }),
       };
     } catch {
       return null;
@@ -418,7 +430,7 @@ export class GoogleOAuthService {
     return 'oauth_provider_error';
   }
 
-  private generateState(): string {
+  private generateNonce(): string {
     return randomBytes(24).toString('hex');
   }
 
@@ -431,9 +443,19 @@ export class GoogleOAuthService {
   }
 
   private createHandoffSignature(encodedPayload: string): string {
-    return createHmac('sha256', this.oauthCookieSecret)
+    return createHmac('sha256', this.oauthStateSecret)
       .update(encodedPayload)
       .digest('base64url');
+  }
+
+  private createCodeVerifier(payload: OAuthHandoffPayload): string {
+    return createHmac('sha256', this.oauthStateSecret)
+      .update(`${payload.version}:${payload.nonce}:${payload.issuedAt}`)
+      .digest('base64url');
+  }
+
+  private createCodeChallenge(codeVerifier: string): string {
+    return createHash('sha256').update(codeVerifier).digest('base64url');
   }
 
   private sanitizeFrontendReason(reason: string): string {

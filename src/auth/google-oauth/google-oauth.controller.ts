@@ -1,33 +1,8 @@
-import { Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
-import type { Request, Response } from 'express';
+import { Controller, Get, Post, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { GoogleOAuthService } from './google-oauth.service';
-
-const GOOGLE_OAUTH_HANDOFF_COOKIE = 'bio4dev_google_oauth_handoff';
-const googleOauthCookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
-  maxAge: 10 * 60 * 1000,
-  path: '/auth',
-};
-
-function getCookieValue(rawCookieHeader: string | undefined, name: string) {
-  if (!rawCookieHeader) {
-    return undefined;
-  }
-
-  const cookies = rawCookieHeader.split(';');
-  for (const cookie of cookies) {
-    const [cookieName, ...rest] = cookie.trim().split('=');
-    if (cookieName === name) {
-      return decodeURIComponent(rest.join('='));
-    }
-  }
-
-  return undefined;
-}
 
 @ApiTags('auth')
 @Controller('auth')
@@ -47,11 +22,6 @@ export class GoogleOAuthController {
   })
   async getGoogleAuthUrl(@Res() res: Response): Promise<void> {
     const result = await this.googleOAuthService.createGoogleAuthRedirect();
-    res.cookie(
-      GOOGLE_OAUTH_HANDOFF_COOKIE,
-      result.handoffCookieValue,
-      googleOauthCookieOptions,
-    );
     res.redirect(result.url);
   }
 
@@ -81,15 +51,9 @@ export class GoogleOAuthController {
     @Query('code') code: string | undefined,
     @Query('error') error: string | undefined,
     @Query('state') state: string | undefined,
-    @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
-    const handoff = this.googleOAuthService.verifyOAuthHandoffCookie(
-      getCookieValue(req.headers.cookie, GOOGLE_OAUTH_HANDOFF_COOKIE),
-    );
-
     if (error) {
-      this.clearOAuthHandoffCookie(res);
       res.redirect(
         this.googleOAuthService.buildFrontendCallbackUrl(
           'error',
@@ -100,7 +64,6 @@ export class GoogleOAuthController {
     }
 
     if (!code) {
-      this.clearOAuthHandoffCookie(res);
       res.redirect(
         this.googleOAuthService.buildFrontendCallbackUrl(
           'error',
@@ -110,8 +73,8 @@ export class GoogleOAuthController {
       return;
     }
 
-    if (!state || !handoff || state !== handoff.state) {
-      this.clearOAuthHandoffCookie(res);
+    const handoff = this.googleOAuthService.verifyOAuthState(state);
+    if (!handoff) {
       res.redirect(
         this.googleOAuthService.buildFrontendCallbackUrl(
           'error',
@@ -134,12 +97,10 @@ export class GoogleOAuthController {
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: '/auth',
       });
-      this.clearOAuthHandoffCookie(res);
 
       res.redirect(this.googleOAuthService.buildFrontendCallbackUrl('success'));
     } catch (err) {
       console.error('OAuth callback error:', err);
-      this.clearOAuthHandoffCookie(res);
       res.redirect(
         this.googleOAuthService.buildFrontendCallbackUrl(
           'error',
@@ -168,9 +129,5 @@ export class GoogleOAuthController {
     });
 
     return { message: 'Successfully logged out' };
-  }
-
-  private clearOAuthHandoffCookie(res: Response) {
-    res.clearCookie(GOOGLE_OAUTH_HANDOFF_COOKIE, googleOauthCookieOptions);
   }
 }

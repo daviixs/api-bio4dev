@@ -82,7 +82,7 @@ export class OnboardingService {
       return {
         profileId: profile.id,
         templateType: profile.templateType,
-        redirectTo: `/dashboard/influencer/${profile.templateType}/${profile.id}/preview`,
+        redirectTo: '/dashboard',
         skippedPlatforms,
       };
     });

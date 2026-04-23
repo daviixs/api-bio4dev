@@ -9,7 +9,7 @@ Bug: user without active session clicks final CTA in developer draft editor and 
 Desired behavior:
 
 - guest user can edit developer draft normally
-- guest user clicking final CTA is redirected to Google login flow
+- guest user clicking final CTA sees the same Google login gate used by influencer onboarding
 - after successful account creation / login, frontend restores session and creates developer profile from local draft
 - authenticated user still saves directly without extra login step
 
@@ -84,7 +84,7 @@ Cons:
 - remove the `booting` error path from guest finalization
 - let the final CTA branch into:
   - authenticated: finalize now
-  - unresolved/guest: preserve draft, store auth intent, open Google login
+  - unresolved/guest: open shared Google auth gate, then preserve draft and start Google login from the gate CTA
 
 ## Target Behavior
 
@@ -93,7 +93,8 @@ Cons:
 - validate current draft and slug first
 - if session is already authenticated, finalize draft directly
 - if session is unresolved or guest, do not show restoration error
-- instead:
+- instead open the same Google auth gate already used by influencer onboarding
+- only when the user confirms in the gate:
   - persist draft as `pending_auth`
   - store `developer_draft_finalize` auth intent
   - redirect browser to `/auth/google`
@@ -119,13 +120,14 @@ Cons:
 
 - no backend API contract change required
 - no new storage keys required
-- frontend decision logic in `DeveloperDraftEditorPage` changes from "block on `booting`" to "branch into finalize or auth handoff"
+- frontend decision logic in `DeveloperDraftEditorPage` changes from "block on `booting`" to "branch into finalize or shared auth gate"
+- frontend gains a shared Google auth gate component reused by influencer and developer flows
 
 ## Test Plan
 
 1. Guest user opens developer draft editor and clicks final CTA
-2. App redirects to Google login instead of showing session restoration toast
-3. Successful callback restores session and creates developer profile
+2. App opens the shared Google auth gate instead of showing session restoration toast
+3. Clicking the gate CTA redirects to Google and successful callback restores session and creates developer profile
 4. Authenticated user clicks final CTA and saves directly without Google redirect
 5. Canceling Google login keeps draft available in same browser
 6. Slug conflict after callback returns recoverable error without losing draft

@@ -160,8 +160,8 @@ export class FinalizeOnboardingResponseDto {
   templateType: string;
 
   @ApiProperty({
-    description: 'Rota para abrir o preview logo após finalizar',
-    example: '/dashboard/influencer/template_04/uuid/preview',
+    description: 'Rota para abrir o dashboard logo após finalizar',
+    example: '/dashboard',
   })
   redirectTo: string;
 

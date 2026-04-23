@@ -384,7 +384,7 @@ export class FinalizeDeveloperOnboardingResponseDto {
   templateType: string;
 
   @ApiProperty({
-    example: '/dashboard/bio/2b6f7ad4-ef1b-4527-b8e1-5893d0ac8b3b',
+    example: '/dashboard',
   })
   redirectTo: string;
 }

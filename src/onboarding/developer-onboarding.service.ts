@@ -11,7 +11,8 @@ import {
 } from '../dto/developer-onboarding.dto';
 import { Plataforma } from '../dto/social.dto';
 
-const DEFAULT_AVATAR_URL = 'https://api.dicebear.com/9.x/initials/svg?seed=Bio4Dev';
+const DEFAULT_AVATAR_URL =
+  'https://api.dicebear.com/9.x/initials/svg?seed=Bio4Dev';
 const SUPPORTED_SOCIAL_PLATFORMS = new Set<string>(Object.values(Plataforma));
 
 @Injectable()
@@ -62,7 +63,7 @@ export class DeveloperOnboardingService {
       return {
         profileId: profile.id,
         templateType: profile.templateType,
-        redirectTo: `/dashboard/bio/${profile.id}`,
+        redirectTo: '/dashboard',
       };
     });
   }

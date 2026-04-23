@@ -33,11 +33,11 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('GET /auth/google', () => {
-    it('should redirect to Google and set the OAuth handoff cookie', async () => {
+    it('should redirect to Google with a signed state and no transient handoff cookie', async () => {
       const response = await request(app.getHttpServer())
         .get('/auth/google')
         .expect(302);
@@ -45,14 +45,12 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
       expect(response.headers.location).toContain(
         'accounts.google.com/o/oauth2',
       );
+      expect(
+        new URL(response.headers.location).searchParams.get('state'),
+      ).toBeTruthy();
 
       const setCookieHeaders = response.headers['set-cookie'];
-      expect(setCookieHeaders).toBeDefined();
-      expect(
-        setCookieHeaders.some((c: string) =>
-          c.includes('bio4dev_google_oauth_handoff'),
-        ),
-      ).toBeTruthy();
+      expect(setCookieHeaders ?? []).toHaveLength(0);
     });
   });
 
@@ -90,11 +88,6 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
       expect(
         cookies.some((c: string) => c.includes('refresh_token=')),
       ).toBeTruthy();
-      expect(
-        cookies.some((c: string) =>
-          c.includes('bio4dev_google_oauth_handoff=;'),
-        ),
-      ).toBeTruthy();
 
       const savedUser = await prisma.user.findUnique({
         where: { googleId: mockProfile.googleId },
@@ -131,11 +124,33 @@ describe('Phase 1 - Google OAuth & JWT Security', () => {
             '/auth/callback/google?status=error&reason=invalid_state',
           );
         });
+    });
 
+    it('should reject a tampered signed state', async () => {
       const agent = request.agent(app.getHttpServer());
-      await startGoogleOAuthFlow(agent);
+      const { state } = await startGoogleOAuthFlow(agent);
+      const tamperedState = `${state.slice(0, -1)}${state.endsWith('a') ? 'b' : 'a'}`;
+
       await agent
-        .get('/auth/google/callback?code=mock-code&state=fake-state-123')
+        .get(`/auth/google/callback?code=mock-code&state=${tamperedState}`)
+        .expect(302)
+        .expect((response) => {
+          expect(response.headers.location).toContain(
+            '/auth/callback/google?status=error&reason=invalid_state',
+          );
+        });
+    });
+
+    it('should reject an expired signed state', async () => {
+      const initialNow = 1_700_000_000_000;
+      const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(initialNow);
+      const agent = request.agent(app.getHttpServer());
+      const { state } = await startGoogleOAuthFlow(agent);
+
+      nowSpy.mockReturnValue(initialNow + 10 * 60 * 1000 + 1);
+
+      await agent
+        .get(`/auth/google/callback?code=mock-code&state=${state}`)
         .expect(302)
         .expect((response) => {
           expect(response.headers.location).toContain(
