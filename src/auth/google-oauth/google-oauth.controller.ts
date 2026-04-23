@@ -7,7 +7,10 @@ import { appendFileSync } from 'fs';
 
 const OAUTH_DEBUG_LOG_PATH = '/tmp/bio4dev-google-oauth-debug.log';
 
-function debugOAuthController(stage: string, details?: Record<string, unknown>) {
+function debugOAuthController(
+  stage: string,
+  details?: Record<string, unknown>,
+) {
   if (process.env.NODE_ENV === 'production') {
     return;
   }
@@ -152,10 +155,7 @@ export class GoogleOAuthController {
 
       res.redirect(this.googleOAuthService.buildFrontendCallbackUrl('success'));
     } catch (err) {
-      debugOAuthController(
-        'controller:callback:error',
-        getErrorDetails(err),
-      );
+      debugOAuthController('controller:callback:error', getErrorDetails(err));
       console.error('OAuth callback error:', err);
       res.redirect(
         this.googleOAuthService.buildFrontendCallbackUrl(
