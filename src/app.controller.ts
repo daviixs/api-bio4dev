@@ -17,4 +17,14 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
+
+  @ApiOperation({
+    summary: 'Verifica o status da API',
+    description: 'Retorna um objeto informando que a API está online',
+  })
+  @ApiOkResponse({ description: 'API online' })
+  @Get('status')
+  getStatus() {
+    return { status: 'online', timestamp: new Date().toISOString() };
+  }
 }
