@@ -12,6 +12,10 @@ import type { Request, Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { IsOptional, IsString } from 'class-validator';
 import { RefreshTokenService } from './refresh-token.service';
+import {
+  getRefreshCookieClearOptions,
+  getRefreshCookieSetOptions,
+} from '../refresh-cookie-options';
 
 class RefreshDto {
   @IsOptional()
@@ -62,12 +66,7 @@ export class RefreshTokenController {
       }
     }
 
-    res.clearCookie('refresh_token', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/auth',
-    });
+    res.clearCookie('refresh_token', getRefreshCookieClearOptions());
 
     return { success: true };
   }
@@ -89,12 +88,6 @@ export class RefreshTokenController {
   }
 
   private setRefreshCookie(res: Response, refreshToken: string) {
-    res.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/auth',
-    });
+    res.cookie('refresh_token', refreshToken, getRefreshCookieSetOptions());
   }
 }

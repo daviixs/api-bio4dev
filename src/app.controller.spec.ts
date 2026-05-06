@@ -19,4 +19,13 @@ describe('AppController', () => {
       expect(appController.getHello()).toBe('Hello World!');
     });
   });
+
+  describe('status', () => {
+    it('should return online status with a timestamp', () => {
+      expect(appController.getStatus()).toEqual({
+        status: 'online',
+        timestamp: expect.any(String),
+      });
+    });
+  });
 });

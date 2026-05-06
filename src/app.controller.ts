@@ -19,12 +19,15 @@ export class AppController {
   }
 
   @ApiOperation({
-    summary: 'Verifica o status da API',
-    description: 'Retorna um objeto informando que a API está online',
+    summary: 'Status da API',
+    description: 'Retorna o status atual da API e o timestamp da verificacao',
   })
   @ApiOkResponse({ description: 'API online' })
   @Get('status')
-  getStatus() {
-    return { status: 'online', timestamp: new Date().toISOString() };
+  getStatus(): { status: 'online'; timestamp: string } {
+    return {
+      status: 'online',
+      timestamp: new Date().toISOString(),
+    };
   }
 }

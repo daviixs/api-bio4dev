@@ -3,6 +3,10 @@ import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { GoogleOAuthService } from './google-oauth.service';
+import {
+  getRefreshCookieClearOptions,
+  getRefreshCookieSetOptions,
+} from '../refresh-cookie-options';
 import { appendFileSync } from 'fs';
 
 const OAUTH_DEBUG_LOG_PATH = '/tmp/bio4dev-google-oauth-debug.log';
@@ -145,13 +149,11 @@ export class GoogleOAuthController {
         isNew: result.isNew,
       });
 
-      res.cookie('refresh_token', result.refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: '/auth',
-      });
+      res.cookie(
+        'refresh_token',
+        result.refreshToken,
+        getRefreshCookieSetOptions(),
+      );
 
       res.redirect(this.googleOAuthService.buildFrontendCallbackUrl('success'));
     } catch (err) {
@@ -177,12 +179,7 @@ export class GoogleOAuthController {
   })
   logout(@Res({ passthrough: true }) res: Response): { message: string } {
     // Clear the refresh token cookie
-    res.clearCookie('refresh_token', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/auth',
-    });
+    res.clearCookie('refresh_token', getRefreshCookieClearOptions());
 
     return { message: 'Successfully logged out' };
   }
