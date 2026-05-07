@@ -1,44 +1,53 @@
-version: '3.9'
+  services:
+    db:
+      image: postgres:17-alpine
+      container_name: api-bio4dev-db
+      env_file:
+        - .env
+      environment:
+        POSTGRES_USER: ${POSTGRES_USER:-bio4dev}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+        POSTGRES_DB: ${POSTGRES_DB:-api_bio4dev}
+      volumes:
+        - pgdata:/var/lib/postgresql/data
+      healthcheck:
+        test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} -h localhost']
+        interval: 5s
+        timeout: 5s
+        retries: 10
+      restart: unless-stopped
 
-services:
-  db:
-    image: postgres:17-alpine
-    container_name: api-bio4dev-db
-    env_file:
-      - .env
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-api_bio4dev}
-    ports:
-      - '${POSTGRES_PORT:-5432}:5432'
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} -h localhost',
-        ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
+    api:
+      build: .
+      container_name: api-bio4dev-api
+      env_file:
+        - .env
+      depends_on:
+        db:
+          condition: service_healthy
+      command: sh -c "npx prisma migrate deploy && npx prisma generate && npm run start:prod"
+      volumes:
+        - ./uploads:/app/uploads
+        - ./keys:/app/keys:ro
+      expose:
+        - '3000'
+      restart: unless-stopped
 
-  migrate:
-    image: node:20-alpine
-    container_name: api-bio4dev-migrate
-    working_dir: /workspace
-    env_file:
-      - .env
-    depends_on:
-      db:
-        condition: service_healthy
-    volumes:
-      - ./:/workspace
-    command: >-
-      sh -c "npm ci --ignore-scripts --prefer-offline && npx prisma migrate deploy && npx prisma generate"
-    restart: 'no'
+    caddy:
+      image: caddy:2-alpine
+      container_name: api-bio4dev-caddy
+      depends_on:
+        - api
+      ports:
+        - '80:80'
+        - '443:443'
+      volumes:
+        - ./Caddyfile:/etc/caddy/Caddyfile:ro
+        - caddy_data:/data
+        - caddy_config:/config
+      restart: unless-stopped
 
-volumes:
-  pgdata:
+  volumes:
+    pgdata:
+    caddy_data:
+    caddy_config:
