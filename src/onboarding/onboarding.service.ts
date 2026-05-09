@@ -12,14 +12,6 @@ import {
 import { Plataforma } from '../dto/social.dto';
 
 const DEFAULT_AVATAR_URL = 'https://api.dicebear.com/7.x/avataaars/svg';
-const SUPPORTED_SOCIAL_PLATFORMS = new Set<Plataforma>([
-  Plataforma.instagram,
-  Plataforma.whatsapp,
-  Plataforma.tiktok,
-  Plataforma.youtube,
-  Plataforma.facebook,
-  Plataforma.pinterest,
-]);
 
 const PLATFORM_SOCIAL_MAP: Record<string, Plataforma> = {
   instagram: Plataforma.instagram,
@@ -38,6 +30,10 @@ const PLATFORM_SOCIAL_MAP: Record<string, Plataforma> = {
   twitch: Plataforma.twitch,
   applemusic: Plataforma.applemusic,
 };
+
+const SUPPORTED_SOCIAL_PLATFORMS = new Set<Plataforma>(
+  Object.values(PLATFORM_SOCIAL_MAP),
+);
 
 @Injectable()
 export class OnboardingService {
@@ -253,17 +249,18 @@ export class OnboardingService {
       seenPlatforms.add(platformId);
 
       const mappedPlatform = PLATFORM_SOCIAL_MAP[platformId];
+
+      if (!mappedPlatform || !SUPPORTED_SOCIAL_PLATFORMS.has(mappedPlatform)) {
+        skippedPlatforms.add(platformId);
+        continue;
+      }
+
       const normalizedUrl = this.normalizeSocialUrl(
         platformId,
         platformLinks[platformId] || '',
       );
 
       if (!normalizedUrl) {
-        continue;
-      }
-
-      if (!mappedPlatform || !SUPPORTED_SOCIAL_PLATFORMS.has(mappedPlatform)) {
-        skippedPlatforms.add(platformId);
         continue;
       }
 
