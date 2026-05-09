@@ -70,7 +70,7 @@ describe('Influencer onboarding social platform support (e2e)', () => {
         slug,
         displayName: 'Creator Links',
         bio: 'Perfil com todas as redes do onboarding.',
-        selectedPlatforms: [...ONBOARDING_PLATFORM_IDS, 'github'],
+        selectedPlatforms: [...ONBOARDING_PLATFORM_IDS, 'github', 'mastodon'],
         platformLinks: {
           ...ONBOARDING_PLATFORM_LINKS,
           github: 'github.com/creator',
@@ -79,7 +79,7 @@ describe('Influencer onboarding social platform support (e2e)', () => {
       })
       .expect(201);
 
-    expect(response.body.skippedPlatforms).toEqual(['github']);
+    expect(response.body.skippedPlatforms).toEqual(['github', 'mastodon']);
 
     const socials = await prisma.social.findMany({
       where: { profileId: response.body.profileId },
@@ -91,6 +91,7 @@ describe('Influencer onboarding social platform support (e2e)', () => {
     expect(socials).toHaveLength(ONBOARDING_PLATFORM_IDS.length);
     expect(storedPlatforms).toEqual(ONBOARDING_PLATFORM_IDS);
     expect(storedPlatforms).not.toContain('github');
+    expect(storedPlatforms).not.toContain('mastodon');
     expect(socials.find((social) => social.plataforma === 'patreon')?.url).toBe(
       'https://patreon.com/creator',
     );

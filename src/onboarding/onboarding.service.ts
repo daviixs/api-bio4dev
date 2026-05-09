@@ -249,17 +249,18 @@ export class OnboardingService {
       seenPlatforms.add(platformId);
 
       const mappedPlatform = PLATFORM_SOCIAL_MAP[platformId];
+
+      if (!mappedPlatform || !SUPPORTED_SOCIAL_PLATFORMS.has(mappedPlatform)) {
+        skippedPlatforms.add(platformId);
+        continue;
+      }
+
       const normalizedUrl = this.normalizeSocialUrl(
         platformId,
         platformLinks[platformId] || '',
       );
 
       if (!normalizedUrl) {
-        continue;
-      }
-
-      if (!mappedPlatform || !SUPPORTED_SOCIAL_PLATFORMS.has(mappedPlatform)) {
-        skippedPlatforms.add(platformId);
         continue;
       }
 
