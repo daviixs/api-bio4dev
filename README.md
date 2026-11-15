@@ -1,10 +1,26 @@
-# Bio4Dev
+<p align="center">
+  <img src="docs/logo.svg" alt="Bio4Dev" width="96">
+</p>
 
-[![Version](https://img.shields.io/badge/version-0.0.1-blue.svg)](https://github.com/yourusername/bio4dev)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
-[![NestJS](https://img.shields.io/badge/NestJS-11.0+-red.svg)](https://nestjs.com/)
+<h1 align="center">Bio4Dev</h1>
+
+<p align="center"><b>Crie e publique o seu portfólio de dev em minutos, com templates prontos e preview antes de publicar.</b></p>
+
+<p align="center">
+  <a href="#instalação-local">Instalação</a> ·
+  <a href="#tecnologias-utilizadas">Tecnologias</a> ·
+  <a href="#exemplo-de-uso">Exemplo de uso</a> ·
+  <a href="#contribuição">Contribuição</a>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/Node.js-18+-339933?logo=nodedotjs&logoColor=white" alt="Node.js 18+">
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript 5">
+  <img src="https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white" alt="NestJS 11">
+  <img src="https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=black" alt="React + Vite">
+  <img src="https://img.shields.io/badge/PostgreSQL-Prisma-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL + Prisma">
+</p>
 
 ## Descrição
 
